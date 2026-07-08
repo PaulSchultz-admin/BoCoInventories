@@ -1,0 +1,8 @@
+.env
+.env.local
+.DS_Store
+.fleet/
+.vscode/
+.idea/
+node_modules/
+uploaded_images/

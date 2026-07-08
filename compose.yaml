@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    # flask requires SIGINT to stop gracefully
+    # (default stop signal from Compose is SIGTERM)
+    stop_signal: SIGINT
+    ports:
+      - "3698:5001"
+    env_file: ".env"
+    volumes:
+      - "./backend/data:/app/data"
+  frontend:
+    build: ./frontend26
+    ports:
+      - "3699:80"
+    env_file: ".env"

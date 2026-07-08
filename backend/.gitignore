@@ -1,0 +1,14 @@
+# Python environment & bytecode
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Data
+data/**/*.db
+data/**/uploaded_images/*
+!data/**/uploaded_images/.gitkeep
+data/database.db
+
+# Environment secrets
+.env
