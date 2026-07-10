@@ -16,7 +16,6 @@ services:
   - type: web
     name: bocoinventories-frontend
     env: static
-    plan: free
     rootDir: frontend26
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
