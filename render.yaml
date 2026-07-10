@@ -15,7 +15,7 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: FRONTEND_URL
-        value: https://bocoinventories-frontend.onrender.com
+        value: https://bocoinventories.org
 
   - type: web
     name: bocoinventories-frontend
