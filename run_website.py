@@ -122,7 +122,11 @@ def check_npm_version():
     Raises:
         EnvironmentError: If npm is not found or its major version is below 8
     """
-    result = subprocess.run(["npm", "--version"], capture_output=True, text=True, shell=True)
+    npm_path = shutil.which("npm")
+    if not npm_path:
+        raise EnvironmentError("npm is not installed or not found in PATH. Please install Node.js.")
+
+    result = subprocess.run([npm_path, "--version"], capture_output=True, text=True)
     if result.returncode != 0:
         raise EnvironmentError("npm is not installed or not found in PATH. Please install Node.js.")
 
