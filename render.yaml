@@ -2,9 +2,13 @@ services:
   - type: web
     name: bocoinventories-backend
     env: docker
-    plan: free
+    plan: starter
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    disk:
+      name: bocoinventories-data
+      mountPath: /app/data
+      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
