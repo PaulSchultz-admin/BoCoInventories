@@ -9,8 +9,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY . /app
 
-ENTRYPOINT ["python3"]
-CMD ["main.py"]
+EXPOSE 5001
+# Shell form so ${PORT:-5001} expands: Render injects PORT at runtime,
+# local docker-compose (no PORT set) falls back to 5001.
+CMD gunicorn -w 2 -b 0.0.0.0:${PORT:-5001} main:app
 
 FROM builder as dev-envs
 

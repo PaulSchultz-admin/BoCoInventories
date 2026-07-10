@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: bocoinventories-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: FRONTEND_URL
+        value: https://bocoinventories-frontend.onrender.com
+
+  - type: web
+    name: bocoinventories-frontend
+    env: static
+    plan: free
+    rootDir: frontend26
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://bocoinventories-backend.onrender.com

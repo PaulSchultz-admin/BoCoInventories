@@ -4,3 +4,4 @@ python-dotenv
 werkzeug
 pytest
 exif
+gunicorn
