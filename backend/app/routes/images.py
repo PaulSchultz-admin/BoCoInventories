@@ -118,6 +118,7 @@ def add_image():
     manual_copyright = request.form.get("copyright", "").strip()
     manual_date_taken = request.form.get("date_taken", "").strip()
     manual_location_taken = request.form.get("location_taken", "").strip()
+    comment_value = request.form.get("comment", "").strip()
     if not wildlife_id or not image_file:
         return jsonify({"error": "Both wildlife_id and image_file are required"}), 400
 
@@ -180,7 +181,7 @@ def add_image():
 
     # Insert the image and get its ID
     image_id = db_helpers.insert(
-        "INSERT INTO Images (wildlife_id, image_path, metadata, copyright, date_taken, location_taken) VALUES (?, ?, JSONB(?), ?, ?, ?)",
+        "INSERT INTO Images (wildlife_id, image_path, metadata, copyright, date_taken, location_taken, comment) VALUES (?, ?, JSONB(?), ?, ?, ?, ?)",
         (
             wildlife_id,
             saved_filename,
@@ -188,6 +189,7 @@ def add_image():
             copyright_value,
             date_taken_value,
             location_taken_value,
+            comment_value,
         ),
     )
 
@@ -200,6 +202,7 @@ def add_image():
                 "copyright": copyright_value,
                 "date_taken": date_taken_value,
                 "location_taken": location_taken_value,
+                "comment": comment_value,
             }
         ),
         201,
@@ -210,8 +213,8 @@ def add_image():
 def replace_image(image_id):
     """
     Replaces an existing image file and/or its copyright/date taken/location
-    taken while keeping the same DB row/ID. Requires image_file, copyright,
-    date_taken, and/or location_taken in form data.
+    taken/comment while keeping the same DB row/ID. Requires image_file,
+    copyright, date_taken, location_taken, and/or comment in form data.
     """
     image = db_helpers.select_one("SELECT * FROM Images WHERE id = ?", [image_id])
     if not image:
@@ -221,16 +224,18 @@ def replace_image(image_id):
     copyright_value = request.form.get("copyright")
     date_taken_value = request.form.get("date_taken")
     location_taken_value = request.form.get("location_taken")
+    comment_value = request.form.get("comment")
     if (
         image_file is None
         and copyright_value is None
         and date_taken_value is None
         and location_taken_value is None
+        and comment_value is None
     ):
         return (
             jsonify(
                 {
-                    "error": "image_file, copyright, date_taken, or location_taken is required"
+                    "error": "image_file, copyright, date_taken, location_taken, or comment is required"
                 }
             ),
             400,
@@ -279,6 +284,12 @@ def replace_image(image_id):
         db_helpers.update(
             "UPDATE Images SET location_taken = ? WHERE id = ?",
             (location_taken_value.strip(), image_id),
+        )
+
+    if comment_value is not None:
+        db_helpers.update(
+            "UPDATE Images SET comment = ? WHERE id = ?",
+            (comment_value.strip(), image_id),
         )
 
     return (
@@ -352,7 +363,7 @@ def get_images_by_wildlife_id(wildlife_id):
     print("get_images_by_wildlife_id", wildlife_id)
     try:
         images = db_helpers.select_multiple(
-            "SELECT id, image_path, copyright, date_taken, location_taken, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
+            "SELECT id, image_path, copyright, date_taken, location_taken, comment, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
             [wildlife_id],
         )
         for image in images:

@@ -180,7 +180,15 @@ const apiService = {
   // saveImage uploads a new image for a wildlife entry, including optional metadata.
   // If copyright is omitted, the backend defaults to the image's EXIF copyright
   // tag, then to "Boulder County Nature Association".
-  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null, copyright = null, dataset = "butterflies") => {
+  saveImage: async (
+    wildlifeId,
+    imageFile,
+    dateTaken = null,
+    locationTaken = null,
+    copyright = null,
+    comment = null,
+    dataset = "butterflies"
+  ) => {
     try {
       const form = new FormData();
       form.append("wildlife_id", wildlifeId);
@@ -188,6 +196,7 @@ const apiService = {
       if (dateTaken) form.append("date_taken", dateTaken);
       if (locationTaken) form.append("location_taken", locationTaken);
       if (copyright) form.append("copyright", copyright);
+      if (comment) form.append("comment", comment);
       const response = await api.post(`/api/add-image/?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
@@ -195,7 +204,7 @@ const apiService = {
     }
   },
 
-  // replaceImage swaps the file and/or copyright/date taken/location taken
+  // replaceImage swaps the file and/or copyright/date taken/location taken/comment
   // for an existing image record. Pass imageFile = null to update only the
   // metadata fields.
   replaceImage: async (
@@ -204,6 +213,7 @@ const apiService = {
     copyright = null,
     dateTaken = null,
     locationTaken = null,
+    comment = null,
     dataset = "butterflies"
   ) => {
     try {
@@ -212,6 +222,7 @@ const apiService = {
       if (copyright !== null) form.append("copyright", copyright);
       if (dateTaken !== null) form.append("date_taken", dateTaken);
       if (locationTaken !== null) form.append("location_taken", locationTaken);
+      if (comment !== null) form.append("comment", comment);
       const response = await api.put(`/api/replace-image/${imageId}?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {

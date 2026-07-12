@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS Images (
   copyright TEXT,
   date_taken TEXT,
   location_taken TEXT,
+  comment TEXT,
   FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
   UNIQUE (wildlife_id, image_path)
 );

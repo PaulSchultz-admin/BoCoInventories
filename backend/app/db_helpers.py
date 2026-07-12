@@ -396,6 +396,13 @@ def init_all_dbs():
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        # Migrate: add comment column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE Images ADD COLUMN comment TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
         _dedupe_family_field(conn)
         _seed_family_field(conn)
         _seed_site_content(conn)
