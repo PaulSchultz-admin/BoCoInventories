@@ -7,24 +7,35 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
 import { X, Camera, Trash, GripVertical } from "lucide-react";
+import { findGlossaryEntry, highlightGlossaryTerms } from "../utils/glossaryHighlight";
+import { GlossaryTerm } from "../components/GlossaryTerm";
 
 // ImageEditModal shows the image upload/edit form in a modal.
 // It handles previewing a file, editing metadata, and optionally deleting the image.
 function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThumbnailId }) {
+  const isExisting = !!image;
   const [preview, setPreview] = useState(image?.image_path ? `${baseUrl}${image.image_path}` : null);
   const [file, setFile] = useState(null);
+  // Additional files selected alongside the first, when adding new photos in bulk.
+  // They share the date/location/copyright/comment fields below.
+  const [extraFiles, setExtraFiles] = useState([]);
+  const [extraPreviews, setExtraPreviews] = useState([]);
   const [dateTaken, setDateTaken] = useState(image?.date_taken || "");
   const [locationTaken, setLocationTaken] = useState(image?.location_taken || "");
   const [copyright, setCopyright] = useState(image?.copyright || "");
+  const [comment, setComment] = useState(image?.comment || "");
   const [isThumbnail, setIsThumbnail] = useState(image?.id != null ? image.id == currentThumbnailId : false);
 
-  // handleFileChange stores the selected image file and generates a local preview URL.
+  // handleFileChange stores the selected image file(s) and generates local preview URLs.
+  // Editing an existing image only ever replaces it with a single file.
   const handleFileChange = e => {
-    const selected = e.target.files[0];
-    if (selected) {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
-    }
+    const selected = Array.from(e.target.files || []);
+    if (selected.length === 0) return;
+    const [first, ...rest] = selected;
+    setFile(first);
+    setPreview(URL.createObjectURL(first));
+    setExtraFiles(rest);
+    setExtraPreviews(rest.map(f => URL.createObjectURL(f)));
   };
 
   return (
@@ -33,7 +44,13 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
         <h2 className="mb-4 text-xl font-bold text-center text-pink-900">Edit Image Details</h2>
 
         <label className="block mb-4 cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          <input
+            type="file"
+            accept="image/*"
+            multiple={!isExisting}
+            className="hidden"
+            onChange={handleFileChange}
+          />
           {preview ? (
             <div className="relative overflow-hidden group rounded-xl">
               <img src={preview} className="object-cover w-full h-48 rounded-xl" />
@@ -47,6 +64,17 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
             </div>
           )}
         </label>
+
+        {!isExisting && extraFiles.length > 0 && (
+          <div className="flex items-center gap-2 mb-4 -mt-2 overflow-x-auto">
+            {extraPreviews.map((src, i) => (
+              <img key={i} src={src} className="flex-shrink-0 object-cover w-14 h-14 rounded-lg" />
+            ))}
+            <span className="flex-shrink-0 text-xs font-bold text-pink-600">
+              +{extraFiles.length} more selected
+            </span>
+          </div>
+        )}
 
         <div className="mb-3">
           <label className="block mb-1 font-bold text-pink-900">Date taken</label>
@@ -76,6 +104,16 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
             value={copyright}
             onChange={e => setCopyright(e.target.value)}
             className="w-full px-3 py-2 text-gray-700 border border-pink-200 rounded-lg placeholder:text-gray-300 focus:outline-none focus:border-pink-500"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block mb-1 font-bold text-pink-900">Comment</label>
+          <textarea
+            placeholder="Optional notes about this photo"
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={2}
+            className="w-full px-3 py-2 text-gray-700 border border-pink-200 rounded-lg resize-none placeholder:text-gray-300 focus:outline-none focus:border-pink-500"
           />
         </div>
 
@@ -111,7 +149,19 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
               Cancel
             </button>
             <button
-              onClick={() => onSave({ file, dateTaken, locationTaken, copyright, isThumbnail, previewUrl: preview })}
+              onClick={() =>
+                onSave({
+                  file,
+                  extraFiles,
+                  extraPreviews,
+                  dateTaken,
+                  locationTaken,
+                  copyright,
+                  comment,
+                  isThumbnail,
+                  previewUrl: preview
+                })
+              }
               className="px-5 py-2 text-white transition-colors bg-pink-700 rounded-full hover:bg-pink-800"
             >
               Save
@@ -125,10 +175,19 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
 
 // FullscreenModal displays a large image preview and optionally renders
 // a watermarked version of the selected wildlife photo.
-function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
+function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
   const [watermarkedSrc, setWatermarkedSrc] = useState(null);
+  const [index, setIndex] = useState(startIndex);
 
-  const matchedImage = images.find(img => img.image_path === highlight || img.previewUrl === highlight);
+  const matchedImage = images[index];
+  const rawSrc = matchedImage?.isPending ? matchedImage.previewUrl : matchedImage?.image_path;
+  const src = rawSrc?.startsWith("blob:") || rawSrc?.startsWith("http") ? rawSrc : `${baseUrl}${rawSrc}`;
+
+  // Clicking the photo advances to the next one for this species, wrapping back to the first.
+  const goToNext = e => {
+    e.stopPropagation();
+    setIndex(prev => (prev + 1) % images.length);
+  };
 
   // useEffect(() => {
   //   const metadata = {
@@ -145,8 +204,8 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
       <img
         src={src}
         alt={wildlife?.name}
-        className="object-contain max-w-full max-h-full rounded-xl"
-        onClick={e => e.stopPropagation()}
+        className={`object-contain max-w-full max-h-full rounded-xl ${images.length > 1 ? "cursor-pointer" : ""}`}
+        onClick={images.length > 1 ? goToNext : e => e.stopPropagation()}
         onContextMenu={e => e.preventDefault()}
         onDragStart={e => e.preventDefault()}
       />
@@ -155,7 +214,13 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
         <p className="italic">{wildlife.scientific_name}</p>
         {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
         {matchedImage?.metadata?.model && <p>{matchedImage.metadata.model}</p>}
+        {matchedImage?.comment && <p className="italic">{matchedImage.comment}</p>}
         <p className="">© {new Date().getFullYear()} {matchedImage?.copyright || "Boulder County Nature Association"}</p>
+        {images.length > 1 && (
+          <p className="mt-1 text-xs text-white/60">
+            Photo {index + 1} of {images.length} — click photo for next
+          </p>
+        )}
       </div>
       <button className="absolute text-3xl text-white top-5 right-5" onClick={onClose}>
         &times;
@@ -309,6 +374,7 @@ export default function WildlifeDetails() {
   const [fieldOrder, setFieldOrder] = useState([]); // array of field name strings
   const [fieldsNameToId, setFieldsNameToId] = useState({}); // { fieldName: fieldId }
   const [orderDirty, setOrderDirty] = useState(false);
+  const [glossaryTerms, setGlossaryTerms] = useState([]);
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
 
@@ -384,6 +450,14 @@ export default function WildlifeDetails() {
     fetchData();
   }, [wildlifeId, category, isNew]);
 
+  // Load the category's glossary so field labels and descriptions can be annotated with tooltips.
+  useEffect(() => {
+    apiService
+      .getGlossaryTerms(category)
+      .then(data => setGlossaryTerms(data || []))
+      .catch(error => console.error("Error fetching glossary terms:", error));
+  }, [category]);
+
   const handleInputChange = (key, value) => {
     setFilteredData(prev => ({ ...prev, [key]: value }));
   };
@@ -417,13 +491,14 @@ export default function WildlifeDetails() {
         let savedImageId;
 
         if (isReplacement) {
-          // Edit of existing image — replace the file and/or copyright/date/location taken in place
+          // Edit of existing image — replace the file and/or copyright/date/location taken/comment in place
           await apiService.replaceImage(
             pending.tempId,
             pending.file || null,
             pending.copyright,
             pending.dateTaken,
             pending.locationTaken,
+            pending.comment,
             category
           );
           savedImageId = pending.tempId; // ID stays the same
@@ -435,6 +510,7 @@ export default function WildlifeDetails() {
             pending.dateTaken,
             pending.locationTaken,
             pending.copyright,
+            pending.comment,
             category
           );
           savedImageId = result?.image_id;
@@ -566,7 +642,10 @@ export default function WildlifeDetails() {
         <div className="flex flex-col gap-8 p-6 overflow-hidden shadow-2xl bg-sand-50 rounded-xl lg:flex-row">
           {/* Left Column: Info Card (Original Layout + Admin Inputs) */}
           <div className="p-8 border lg:w-5/12 bg-sand-100/70 rounded-2xl border-sand-200/50">
-            {fieldOrder.map((key, index) => (
+            {fieldOrder.map((key, index) => {
+              const label = key.replace("_", " ");
+              const labelGlossaryEntry = findGlossaryEntry(label, glossaryTerms);
+              return (
               <div
                 key={key}
                 className={`mb-6 ${admin ? "cursor-grab active:cursor-grabbing" : ""}`}
@@ -578,7 +657,13 @@ export default function WildlifeDetails() {
               >
                 <div className="flex items-center gap-2">
                   {admin && <GripVertical className="flex-shrink-0 w-4 h-4 -ml-1 text-pink-300 hover:text-pink-500" />}
-                  <h3 className="mb-1 text-xl font-bold capitalize text-sand-600">{key.replace("_", " ")}</h3>
+                  <h3 className="mb-1 text-xl font-bold capitalize text-sand-600">
+                    {labelGlossaryEntry ? (
+                      <GlossaryTerm definition={labelGlossaryEntry.description}>{label}</GlossaryTerm>
+                    ) : (
+                      label
+                    )}
+                  </h3>
                 </div>
 
                 {admin ? (
@@ -589,10 +674,13 @@ export default function WildlifeDetails() {
                     rows={2}
                   />
                 ) : (
-                  <p className="leading-relaxed text-gray-700">{filteredData[key] || "No information available."}</p>
+                  <p className="leading-relaxed text-gray-700">
+                    {filteredData[key] ? highlightGlossaryTerms(filteredData[key], glossaryTerms) : "No information available."}
+                  </p>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Right Column */}
@@ -625,8 +713,8 @@ export default function WildlifeDetails() {
             </div>
 
             {/* Thumbnail Carousel */}
-            <div className="flex items-center justify-center gap-4 p-2 mt-6 overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-3">
+            <div className="p-2 mt-6">
+              <div className="grid grid-cols-5 justify-items-center gap-3">
                 {images.map(img => {
                   const src = img.isPending ? img.previewUrl : `${BASE_IMG_URL}${img.image_path}`;
                   return (
@@ -689,11 +777,13 @@ export default function WildlifeDetails() {
         {/* Fullscreen Modal */}
         {imageClicked && (
           <FullscreenModal
-            src={highlight?.startsWith("blob:") ? highlight : `${BASE_IMG_URL}${highlight}`}
-            wildlife={wildlife}
             images={images}
-            highlight={highlight}
-            BASE_IMG_URL={BASE_IMG_URL}
+            startIndex={Math.max(
+              0,
+              images.findIndex(img => (img.isPending ? img.previewUrl : img.image_path) === highlight)
+            )}
+            wildlife={wildlife}
+            baseUrl={BASE_IMG_URL}
             onClose={() => setImageClicked(null)}
           />
         )}
@@ -771,13 +861,36 @@ export default function WildlifeDetails() {
                   }
                   return [...prev, { ...data, tempId: tempEntry.id }];
                 });
+
+                // Additional photos selected alongside the first one — each becomes
+                // its own pending image, sharing the same metadata entered above.
+                if (!isExisting && data.extraFiles?.length > 0) {
+                  const extraEntries = data.extraFiles.map((extraFile, i) => {
+                    const tempId = `pending-${Date.now()}-${i}`;
+                    return {
+                      tempEntry: { id: tempId, image_path: null, previewUrl: data.extraPreviews[i], isPending: true },
+                      pendingImage: {
+                        file: extraFile,
+                        dateTaken: data.dateTaken,
+                        locationTaken: data.locationTaken,
+                        copyright: data.copyright,
+                        comment: data.comment,
+                        isThumbnail: false,
+                        tempId
+                      }
+                    };
+                  });
+                  setImages(prev => [...prev, ...extraEntries.map(e => e.tempEntry)]);
+                  setPendingImages(prev => [...prev, ...extraEntries.map(e => e.pendingImage)]);
+                }
               } else if (
                 isExisting &&
                 (data.copyright !== (editingImage.copyright || "") ||
                   data.dateTaken !== (editingImage.date_taken || "") ||
-                  data.locationTaken !== (editingImage.location_taken || ""))
+                  data.locationTaken !== (editingImage.location_taken || "") ||
+                  data.comment !== (editingImage.comment || ""))
               ) {
-                // Metadata-only edit — no new file, just persist the copyright/date/location taken change.
+                // Metadata-only edit — no new file, just persist the copyright/date/location taken/comment change.
                 setImages(prev =>
                   prev.map(img =>
                     img.id === editingImage.id
@@ -785,7 +898,8 @@ export default function WildlifeDetails() {
                           ...img,
                           copyright: data.copyright,
                           date_taken: data.dateTaken,
-                          location_taken: data.locationTaken
+                          location_taken: data.locationTaken,
+                          comment: data.comment
                         }
                       : img
                   )

@@ -16,7 +16,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/butterflies" replace />
+        element: <Navigate to="/wildflowers" replace />
       },
       {
         path: ":category", // This will match 'butterflies', 'dragonflies', or 'wildflowers'
