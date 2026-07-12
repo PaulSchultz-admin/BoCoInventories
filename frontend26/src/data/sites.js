@@ -3,7 +3,7 @@
 export const sites = [
   {
     id: "butterflies",
-    path: "/",
+    path: "/butterflies",
     logo: "/butterfly-logo.png",
     heroImage: "/butterfly-hero.png",
     label: "Butterflies",
