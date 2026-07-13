@@ -1,18 +1,6 @@
-import { Link, useParams } from "react-router-dom";
 import { useState, useContext } from "react";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
-import { sites } from "../data/sites";
-
-const footerPages = [
-  { label: "Wildlife", path: "" },
-  { label: "Glossary", path: "glossary" },
-  { label: "About", path: "about" },
-  { label: "Resources", path: "resources" },
-  { label: "Contact", path: "contact" }
-];
-
-const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 const FacebookIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -31,11 +19,6 @@ const InstagramIcon = () => (
 export const Footer = () => {
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);
-  const { category } = useParams();
-  const activeCategory = sites.find(s => s.id === category)?.id || sites[0].id;
-
-  const linkUnderlineStyles = "relative w-fit font-serif text-[1.1rem] text-sand-700 transition-colors duration-300 hover:text-sand-900 group";
-  const underlineSpan = "absolute left-1/2 bottom-0 w-0 h-[1px] bg-sand-500 transition-all duration-300 group-hover:w-full group-hover:left-0";
 
   return (
     <footer className="w-full py-12 px-6 border-t text-sand-600 bg-sand-100 border-sand-200">
@@ -52,7 +35,6 @@ export const Footer = () => {
               <p className="font-bold text-sand-800 tracking-wider text-sm mb-1 uppercase">
                 Boulder County Nature Association
               </p>
-              <p className="text-sand-500 text-sm">P.O. Box 493, Boulder, CO 80306</p>
             </div>
             <div className="flex gap-4">
               <a href="https://www.facebook.com/BoulderCountyNatureAssociation" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Facebook">
@@ -60,37 +42,6 @@ export const Footer = () => {
               </a>
               <a href="https://www.instagram.com/bouldernatue" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Instagram">
                 <InstagramIcon />
-              </a>
-            </div>
-          </div>
-
-          {/* Navigation Columns */}
-          <div className="flex flex-wrap gap-x-16 gap-y-10">
-            <div className="flex flex-col gap-2">
-              <h5 className="text-sand-400 text-xs font-bold tracking-[0.1em] uppercase mb-2">Pages</h5>
-              {footerPages.map(({ label, path }) => (
-                <Link
-                  key={label}
-                  to={`/${activeCategory}${path ? `/${path}` : ""}`}
-                  onClick={scrollToTop}
-                  className={linkUnderlineStyles}
-                >
-                  {label}
-                  <span className={underlineSpan} />
-                </Link>
-              ))}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <h5 className="text-sand-400 text-xs font-bold tracking-[0.1em] uppercase mb-2">Links</h5>
-              <a 
-                href="https://bcna.org/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className={linkUnderlineStyles}
-              >
-                Main Website
-                <span className={underlineSpan} />
               </a>
             </div>
           </div>
