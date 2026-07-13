@@ -212,9 +212,9 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
         <p className="font-bold">{wildlife.name}</p>
         <p className="italic">{wildlife.scientific_name}</p>
-        {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
-        {matchedImage?.metadata?.model && <p>{matchedImage.metadata.model}</p>}
         {matchedImage?.comment && <p className="italic">{matchedImage.comment}</p>}
+        {matchedImage?.location_taken && <p>{matchedImage.location_taken}</p>}
+        {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
         <p className="">© {new Date().getFullYear()} {matchedImage?.copyright || "Boulder County Nature Association"}</p>
         {images.length > 1 && (
           <p className="mt-1 text-xs text-white/60">
