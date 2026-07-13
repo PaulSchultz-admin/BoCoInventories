@@ -9,6 +9,7 @@ import { NavLink } from "react-router-dom";
 import { Filter, X } from "lucide-react";
 import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
+import { navLinks } from "../../components/NavBar";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
 function AddCard({ wildlifeType, label }) {
@@ -280,6 +281,19 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
               BCNA nature photo inventory
             </p>
           </div>
+        </div>
+
+        {/* Hero page nav */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center gap-8 px-[8%] py-4 bg-black/30">
+          {navLinks.map(link => (
+            <NavLink
+              key={link.name}
+              to={`/${type}/${link.path}`}
+              className="font-sans text-sm tracking-wide uppercase transition-colors text-sand-50 hover:text-sand-200"
+            >
+              {link.name}
+            </NavLink>
+          ))}
         </div>
       </section>
 

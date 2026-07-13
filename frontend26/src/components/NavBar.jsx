@@ -10,7 +10,8 @@ import { AdminLogin } from "./AdminLogin";
 import { sites } from "../data/sites";
 
 // Links, relative to the current dataset (e.g. "/butterflies/about").
-const navLinks = [
+// Also used by WildlifeDB's hero banner.
+export const navLinks = [
   { name: "About", path: "about" },
   { name: "Resources", path: "resources" },
   { name: "Glossary", path: "glossary" },
