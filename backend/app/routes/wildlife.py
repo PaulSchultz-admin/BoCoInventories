@@ -686,7 +686,8 @@ def get_wildlife():
     """
     Retrieves all wildlife entries, including their associated custom field values.
 
-    Each entry includes id, name, scientific_name, category_id, and all the custom field values.
+    Each entry includes id, name, scientific_name, category_id, all the custom field values,
+    and a space-joined "locations" string of the distinct location_taken values across its images.
     Custom fields have their name as the key and their value as the value.
     Text field values are returned as strings; integer field values are returned as integers.
 
@@ -758,7 +759,15 @@ def get_wildlife():
             cleaned_field_values.append(
                 {"field_id": field["id"], "value": field_value, "name": field["name"]}
             )
-        out.append({**wildlife, "field_values": cleaned_field_values})
+
+        image_locations = db_helpers.select_multiple(
+            "SELECT DISTINCT location_taken FROM Images "
+            "WHERE wildlife_id = ? AND location_taken IS NOT NULL AND location_taken != ''",
+            [wildlife["id"]],
+        )
+        locations = " ".join(row["location_taken"] for row in image_locations)
+
+        out.append({**wildlife, "field_values": cleaned_field_values, "locations": locations})
     return jsonify(out), 200
 
 

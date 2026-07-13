@@ -1,7 +1,7 @@
 /**
  * WildlifeDB renders a searchable catalog of wildlife items for a given dataset.
  * It includes a filter sidebar, searchable results, and an admin-only add card.
- * Uses FlexSearch to search across name, scientific_name, and all field_values.
+ * Uses FlexSearch to search across name, scientific_name, all field_values, and image locations.
  */
 import { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { AdminContext } from "../../services/adminContext";
@@ -173,7 +173,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
         index: [
           { field: "name", tokenize: "forward", resolution: 9 },
           { field: "scientific_name", tokenize: "forward", resolution: 7 },
-          { field: "field_text", tokenize: "forward", resolution: 5 }
+          { field: "field_text", tokenize: "forward", resolution: 5 },
+          { field: "locations", tokenize: "forward", resolution: 5 }
         ]
       }
     });
@@ -183,7 +184,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
         id: w.id,
         name: w.name ?? "",
         scientific_name: w.scientific_name ?? "",
-        field_text: buildFieldText(w)
+        field_text: buildFieldText(w),
+        locations: w.locations ?? ""
       });
     }
 
