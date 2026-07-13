@@ -136,22 +136,6 @@ export const NavBar = () => {
                 ))}
               </div>
             </div>
-
-            {/* Mobile Navigation Links */}
-            <div className="p-4">
-              <div className="flex flex-col space-y-4">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.name}
-                    to={`/${currentSite.id}/${link.path}`}
-                    className="text-sand-600 font-medium py-2 px-3 rounded-lg hover:bg-sand-50 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {link.name}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
           </div>
         )}
       </nav>
