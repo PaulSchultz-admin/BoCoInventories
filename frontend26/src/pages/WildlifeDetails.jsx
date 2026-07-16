@@ -641,7 +641,7 @@ export default function WildlifeDetails() {
       <div className="relative z-10 max-w-6xl px-4 mx-auto -mt-10">
         <div className="flex flex-col gap-8 p-6 overflow-hidden shadow-2xl bg-sand-50 rounded-xl lg:flex-row">
           {/* Left Column: Info Card (Original Layout + Admin Inputs) */}
-          <div className="p-8 border lg:w-5/12 bg-sand-100/70 rounded-2xl border-sand-200/50">
+          <div className="order-2 p-8 border lg:order-1 lg:w-5/12 bg-sand-100/70 rounded-2xl border-sand-200/50">
             {fieldOrder.map((key, index) => {
               const label = key.replace("_", " ");
               const labelGlossaryEntry = findGlossaryEntry(label, glossaryTerms);
@@ -684,7 +684,7 @@ export default function WildlifeDetails() {
           </div>
 
           {/* Right Column */}
-          <div className="flex flex-col lg:w-7/12">
+          <div className="order-1 flex flex-col lg:order-2 lg:w-7/12">
             <div className="relative group cursor-zoom-in bg-sand-100 rounded-2xl">
               <img
                 src={
