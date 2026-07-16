@@ -26,3 +26,7 @@ services:
     envVars:
       - key: VITE_BACKEND_URL
         value: https://bocoinventories-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
