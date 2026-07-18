@@ -19,11 +19,14 @@ Database Operations:
     - select_one(): Execute SELECT queries and return first result as dict
 """
 
+import logging
 import os
 import json
 import sqlite3
 from typing import Sequence, Any
 from flask import current_app, has_app_context, has_request_context, request
+
+logger = logging.getLogger(__name__)
 
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(THIS_FOLDER)
@@ -82,7 +85,7 @@ def ensure_upload_folder_exists():
     folder = get_active_image_upload_folder()
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
-        print(f"[DB DEBUG] Created missing folder: {folder}")
+        logger.debug(f"Created missing folder: {folder}")
     return folder
 
 
@@ -121,14 +124,14 @@ def find_existing_image_folder(filename: str) -> str | None:
 
 def get_connection():
     db_path = get_active_database_path()
-    print(f"[DB DEBUG] Attempting to connect to database: {db_path}")  # Debug
+    logger.debug(f"Attempting to connect to database: {db_path}")
     try:
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
-        print("[DB DEBUG] Database connection established.")
+        logger.debug("Database connection established.")
         return conn
     except Exception as e:
-        print(f"[DB DEBUG] Database connection failed: {e}")
+        logger.warning(f"Database connection failed: {e}")
         raise
 
 
@@ -174,13 +177,13 @@ def select_multiple(query: str, params: Sequence[Any] = ()) -> list[dict[str, An
 
 def select_one(query: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
     """Executes a SELECT query and returns the first result as a dict"""
-    print(f"[DB DEBUG] Executing SELECT ONE: {query} | Params: {params}")
+    logger.debug(f"Executing SELECT ONE: {query} | Params: {params}")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, params)
     result = cursor.fetchone()
     conn.close()
-    print(f"[DB DEBUG] Result: {result}")
+    logger.debug(f"Result: {result}")
     if result:
         return dict(result)
     else:
@@ -188,7 +191,7 @@ def select_one(query: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
 
 
 def init_db():
-    print("[DB DEBUG] Initializing database...")
+    logger.debug("Initializing database...")
     conn = get_connection()
     cursor = conn.cursor()
     with open(os.path.join(THIS_FOLDER, "create.sql"), "r") as sql_file:
@@ -196,7 +199,7 @@ def init_db():
     cursor.executescript(sql_script)
     conn.commit()
     conn.close()
-    print("[DB DEBUG] Database initialized!")
+    logger.debug("Database initialized!")
 
 
 def _dedupe_family_field(conn):
@@ -354,7 +357,7 @@ def init_all_dbs():
         if not entry.is_dir():
             continue
         db_path = os.path.join(entry.path, "database.db")
-        print(f"[DB DEBUG] Initializing database for dataset '{entry.name}': {db_path}")
+        logger.debug(f"Initializing database for dataset '{entry.name}': {db_path}")
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -407,4 +410,4 @@ def init_all_dbs():
         _seed_family_field(conn)
         _seed_site_content(conn)
         conn.close()
-        print(f"[DB DEBUG] Dataset '{entry.name}' initialized with 'family' field.")
+        logger.debug(f"Dataset '{entry.name}' initialized with 'family' field.")

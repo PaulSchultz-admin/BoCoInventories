@@ -1,4 +1,6 @@
 # init.py
+import logging
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from app.routes.wildlife import wildlife_bp
@@ -12,6 +14,19 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Backend modules log routine activity (DB queries, image lookups, etc.) at
+# DEBUG level instead of printing unconditionally. Quiet by default; set
+# LOG_LEVEL=DEBUG to see it all again. Scoped to our own "app.*" loggers (with
+# propagate=False) rather than logging.basicConfig(), which would also swallow
+# Flask/Werkzeug's own request/startup logging into this format.
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s: %(message)s"))
+    logger.addHandler(_handler)
+logger.setLevel(os.getenv("LOG_LEVEL", "WARNING").upper())
+logger.propagate = False
 
 
 def _normalize_dataset_name(name: str) -> str:
@@ -87,7 +102,7 @@ def create_app(test_config=None):
         ],
         supports_credentials=True,
     )
-    print("[CORS DEBUG] CORS enabled for all routes.")
+    logger.debug("CORS enabled for all routes.")
 
     @app.before_request
     def validate_dataset():

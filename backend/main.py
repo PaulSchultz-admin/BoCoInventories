@@ -26,15 +26,20 @@ else:
 from app import create_app
 from app import db_helpers
 
-# Initialize all dataset databases (butterflies, dragonflies, wildflowers),
-# including seeding each with its own copy of the editable page content and
-# glossary terms (see db_helpers._seed_site_content).
-db_helpers.init_all_dbs()
-
 # Create Flask application instance
 app = create_app()
 
 if __name__ == "__main__":
+    # With debug=True, Werkzeug's reloader re-execs this whole script in a child
+    # process to actually serve requests, while the original process just watches
+    # for file changes. Both processes run this module top-to-bottom, so without
+    # this guard init_all_dbs() (and its startup logging) would run twice per launch.
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        # Initialize all dataset databases (butterflies, dragonflies, wildflowers),
+        # including seeding each with its own copy of the editable page content and
+        # glossary terms (see db_helpers._seed_site_content).
+        db_helpers.init_all_dbs()
+
     # Run development server with debug mode enabled
     # Accessible from all network interfaces (0.0.0.0) on port 5001
     # Port 5001 avoids the macOS AirPlay Receiver, which occupies port 5000.

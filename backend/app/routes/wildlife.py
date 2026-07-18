@@ -24,6 +24,7 @@ Routes include:
 """
 
 from flask import Blueprint, request, jsonify, current_app
+import logging
 import os
 from app import db_helpers
 from app.routes.images import delete_image_by_id
@@ -37,6 +38,8 @@ from app.utils import (
     get_subcategory_ids,
 )  # Adjust import if needed
 import json
+
+logger = logging.getLogger(__name__)
 
 wildlife_bp = Blueprint("wildlife", __name__)
 
@@ -241,9 +244,6 @@ def edit_wildlife():
         )
 
     valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
-    # valid_image_field_names = {field['name'] for field in valid_image_fields}
-
-    # print(valid_image_field_names)
 
     for image_file in request.files.values():
         if image_file.filename == "":
@@ -260,7 +260,7 @@ def edit_wildlife():
                 400,
             )
         if not image_file.mimetype.startswith("image/"):
-            print("this is not an image")
+            logger.debug(f"Rejected non-image upload: {image_file.filename} ({image_file.mimetype})")
             return (
                 jsonify(
                     {
@@ -285,7 +285,7 @@ def edit_wildlife():
         )
 
     for field_name, value in other_fields.items():
-        print(field_name, value)
+        logger.debug(f"Updating field '{field_name}' = {value!r}")
         field = db_helpers.select_one(
             "SELECT id FROM Fields WHERE name = ?", [field_name]
         )
@@ -300,7 +300,7 @@ def edit_wildlife():
     for field_name, image_file in request.files.items():
         if image_file.filename == "":
             continue
-        print(field_name, image_file)
+        logger.debug(f"Updating image field '{field_name}' with {image_file.filename}")
         field = db_helpers.select_one(
             "SELECT id FROM Fields WHERE name = ?", [field_name]
         )
@@ -310,7 +310,7 @@ def edit_wildlife():
         saved_filename = save_file(
             image_file, current_app.config["IMAGE_UPLOAD_FOLDER"]
         )
-        print(saved_filename)
+        logger.debug(f"Saved image field file as {saved_filename}")
         db_helpers.insert(
             "REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
             (wildlife_id, field_id, saved_filename),
@@ -949,9 +949,8 @@ def edit_field():
 
 @wildlife_bp.route("/api/delete-field/", methods=["DELETE"])
 def delete_field():
-    print("Received request to delete field")
     """
-    Deletes a field by ID. 
+    Deletes a field by ID.
     Requires 'field_id' and 'category_id'
     Example request:
     DELETE /api/delete-field/?field_id=2&category_id=1
@@ -960,16 +959,17 @@ def delete_field():
         "message": "Field successfully deleted"
     }
     """
+    logger.debug("Received request to delete field")
 
     field_id = request.args["field_id"]
     category_id = request.args["category_id"]
 
     """
     Checking existence and association is redundant as Edit_Wildlife sends information from pre_existing queries.
-    But for the sake of completeness, and perhaps futured debugging, 
+    But for the sake of completeness, and perhaps futured debugging,
     we will check if the field exists and if it is associated with the category
     """
-    print("Deleting field with ID:", field_id, "from category ID:", category_id)
+    logger.debug(f"Deleting field with ID {field_id} from category ID {category_id}")
 
     row = db_helpers.select_one(
         """

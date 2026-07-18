@@ -22,6 +22,7 @@ Routes include:
     - DELETE /api/delete_image/: Delete image and associated file
 """
 from flask import Blueprint, request, jsonify, send_from_directory
+import logging
 import os
 import json
 from app import db_helpers
@@ -30,6 +31,8 @@ from app import db_helpers
 from app.utils import save_file  # Adjust import if needed
 import sqlite3
 from exif import Image
+
+logger = logging.getLogger(__name__)
 
 images_bp = Blueprint("images", __name__)
 
@@ -96,14 +99,8 @@ def get_image(filename):
     image_folder = db_helpers.find_existing_image_folder(filename)
     if image_folder is None:
         return jsonify({"error": f"Image '{filename}' not found in any dataset"}), 404
-    print(f"[DEBUG] Requested image filename: {filename}")
-    print(f"[DEBUG] Image folder: {image_folder}")
     file_path = os.path.join(image_folder, filename)
-    print(f"[DEBUG] Full file path: {file_path}")
-    if not os.path.exists(file_path):
-        print(f"[DEBUG] File does not exist: {file_path}")
-    else:
-        print(f"[DEBUG] File exists: {file_path}")
+    logger.debug(f"Serving image '{filename}' from {file_path}")
     return send_from_directory(image_folder, filename)
 
 
@@ -124,7 +121,7 @@ def add_image():
 
     file_length = image_file.seek(0, os.SEEK_END)
     image_file.seek(0, os.SEEK_SET)
-    print("file_length", file_length)
+    logger.debug(f"Uploaded file length: {file_length}")
     if file_length > 10 * 1024 * 1024:
         return (
             jsonify(
@@ -160,7 +157,7 @@ def add_image():
                 except Exception:
                     continue
 
-        print(exif_dict, json.dumps(exif_dict))
+        logger.debug(f"Extracted EXIF data: {json.dumps(exif_dict)}")
 
     # Copyright defaults to a hand-entered value, then the image's EXIF
     # copyright tag, then the organization's name.
@@ -260,7 +257,7 @@ def replace_image(image_id):
                 if os.path.exists(old_file_path):
                     os.remove(old_file_path)
             except Exception as e:
-                print(f"Error deleting old image file: {e}")
+                logger.warning(f"Error deleting old image file: {e}")
 
         # Save new file
         saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
@@ -360,7 +357,7 @@ def get_images_by_wildlife_id(wildlife_id):
     Get all images for a wildlife instance.
     Requires wildlife_id.
     """
-    print("get_images_by_wildlife_id", wildlife_id)
+    logger.debug(f"get_images_by_wildlife_id: {wildlife_id}")
     try:
         images = db_helpers.select_multiple(
             "SELECT id, image_path, copyright, date_taken, location_taken, comment, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
@@ -369,10 +366,9 @@ def get_images_by_wildlife_id(wildlife_id):
         for image in images:
             if image["metadata"]:
                 image["metadata"] = json.loads(image["metadata"])
-        # print(images)
         return jsonify(images), 200
     except Exception as e:
-        print("Error in get_images_by_wildlife_id:", e)
+        logger.warning(f"Error in get_images_by_wildlife_id: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -413,13 +409,12 @@ def delete_image_by_id(image_id):
     if image_path:
         upload_dir = db_helpers.get_active_image_upload_folder()
         file_path = os.path.join(upload_dir, image_path)
-        print("i am here")
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
         except Exception as e:
             # Log the error but continue with DB deletion
-            print(f"Error deleting image file {file_path}: {e}")
+            logger.warning(f"Error deleting image file {file_path}: {e}")
 
     # Check if the image is the thumbnail for its wildlife
     wildlife = db_helpers.select_one(

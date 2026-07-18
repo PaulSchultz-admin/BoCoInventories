@@ -91,8 +91,6 @@ def check_node_version():
             "Upgrade Node: https://nodejs.org"
         )
 
-    print(f"Using Node.js {version_str}")
-
 
 def check_python_version():
     """Check that Python meets the minimum version required by the backend.
@@ -110,7 +108,6 @@ def check_python_version():
             f"Python {platform.python_version()} is too old. Python >= 3.10 is required.\n"
             "Upgrade: https://www.python.org/downloads/"
         )
-    print(f"Using Python {platform.python_version()}")
 
 
 def check_npm_version():
@@ -141,8 +138,6 @@ def check_npm_version():
             f"npm {version_str} is too old. npm >= 8 is required.\n"
             "Upgrade: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm"
         )
-
-    print(f"Using npm {version_str}")
 
 
 def check_prerequisites():
@@ -210,8 +205,6 @@ def setup_virtualenv():
     if not verify_venv_python():
         print("Creating virtual environment...")
         subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-    else:
-        print("Virtual environment already exists and is compatible.")
 
 
 def install_python_dependencies():
@@ -221,12 +214,11 @@ def install_python_dependencies():
     """
     requirements_path = os.path.join(base_dir, "backend", "requirements.txt")
     if os.path.exists(requirements_path):
-        print("Installing/updating Python dependencies...")
         subprocess.run(
-            [venv_python, "-m", "pip", "install", "-r", requirements_path], check=True
+            [venv_python, "-m", "pip", "install", "-q", "-r", requirements_path], check=True
         )
     else:
-        print("No requirements.txt found.")
+        print("Warning: no requirements.txt found.")
 
 
 def check_env_file():
@@ -245,8 +237,6 @@ def check_env_file():
             f.write("VITE_BACKEND_URL=http://localhost:5001\n")
             f.write("ADMIN_PASSWORD=TEMPLATEPASSWORD\n")
             f.write("SECRET_KEY=TEMPLATEKEY\n")
-    else:
-        print(".env file found in repo root.")
 
     # Create .env in frontend26 for Vite (only needs VITE_BACKEND_URL)
     frontend_env_path = os.path.join(base_dir, "frontend26", ".env")
@@ -254,8 +244,6 @@ def check_env_file():
         print("Creating .env file in frontend26 for Vite...")
         with open(frontend_env_path, "w") as f:
             f.write("VITE_BACKEND_URL=http://localhost:5001\n")
-    else:
-        print(".env file found in frontend26.")
 
 
 def record_node_version(frontend_path):
@@ -345,7 +333,6 @@ def run_backend():
     Returns:
         subprocess.Popen: The backend process object for later termination control
     """
-    print("Starting backend server...")
     # Use -u flag to prevent Python output buffering for better log visibility
     backend_process = subprocess.Popen(
         [venv_python, "-u", "main.py"], cwd=os.path.join(base_dir, "backend")
@@ -387,11 +374,14 @@ def setup_frontend():
 
     if needs_install:
         print("Installing frontend dependencies...")
-        subprocess.run([npm_path, "install"], cwd=frontend_path, check=True)
+        subprocess.run(
+            [npm_path, "install", "--no-fund", "--no-audit", "--loglevel=error"],
+            cwd=frontend_path,
+            check=True,
+        )
         record_node_version(frontend_path)
 
     # Start Vite development server
-    print("Starting frontend...")
     frontend_process = subprocess.Popen([npm_path, "run", "dev"], cwd=frontend_path)
     return frontend_process
 
@@ -418,6 +408,8 @@ def main():
     # Launch both servers
     backend_process = run_backend()
     frontend_process = setup_frontend()
+    print("Backend:  http://localhost:5001")
+    print("Frontend: http://localhost:3000")
 
     try:
         # Sleep-based loop avoids burning CPU on a busy-wait (was: while True: pass)

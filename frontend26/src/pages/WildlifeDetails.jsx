@@ -215,7 +215,10 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
         {matchedImage?.comment && <p className="italic">{matchedImage.comment}</p>}
         {matchedImage?.location_taken && <p>{matchedImage.location_taken}</p>}
         {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
-        <p className="">© {new Date().getFullYear()} {matchedImage?.copyright || "Boulder County Nature Association"}</p>
+        {(matchedImage?.metadata?.model || matchedImage?.metadata?.make) && (
+          <p>{(matchedImage.metadata.model || matchedImage.metadata.make).trim()}</p>
+        )}
+        <p className="">© {matchedImage?.copyright || "Boulder County Nature Association"}</p>
         {images.length > 1 && (
           <p className="mt-1 text-xs text-white/60">
             Photo {index + 1} of {images.length} — click photo for next
