@@ -204,7 +204,8 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
       <img
         src={src}
         alt={wildlife?.name}
-        className={`object-contain max-w-full max-h-full rounded-xl ${images.length > 1 ? "cursor-pointer" : ""}`}
+        draggable={false}
+        className={`object-contain max-w-full max-h-full rounded-xl select-none [-webkit-touch-callout:none] ${images.length > 1 ? "cursor-pointer" : ""}`}
         onClick={images.length > 1 ? goToNext : e => e.stopPropagation()}
         onContextMenu={e => e.preventDefault()}
         onDragStart={e => e.preventDefault()}
