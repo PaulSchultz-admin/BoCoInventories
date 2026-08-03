@@ -140,13 +140,46 @@ function buildFieldText(item) {
   return item.field_values.map(fv => fv.value).join(" ");
 }
 
+// Filter state (search text, selected genera, expanded families) is persisted
+// per dataset in sessionStorage, so it survives navigating to a species detail
+// page and back rather than resetting to default.
+const FILTER_STORAGE_PREFIX = "wildlifeFilters:";
+
+function loadFilterState(type) {
+  try {
+    const raw = sessionStorage.getItem(FILTER_STORAGE_PREFIX + type);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      search: parsed.search ?? "",
+      selectedGenera: new Set(parsed.selectedGenera ?? []),
+      openFamilies: new Set(parsed.openFamilies ?? [])
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", title }) {
-  const [search, setSearch] = useState("");
+  const savedFilters = loadFilterState(type);
+  const [search, setSearch] = useState(savedFilters?.search ?? "");
   const [wildlife, setWildlife] = useState([]);
-  const [openFamilies, setOpenFamilies] = useState(new Set());
-  const [selectedGenera, setSelectedGenera] = useState(new Set());
+  const [openFamilies, setOpenFamilies] = useState(savedFilters?.openFamilies ?? new Set());
+  const [selectedGenera, setSelectedGenera] = useState(savedFilters?.selectedGenera ?? new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { admin } = useContext(AdminContext);
+
+  // Persist filter state whenever it changes so it's there when the user comes back.
+  useEffect(() => {
+    sessionStorage.setItem(
+      FILTER_STORAGE_PREFIX + type,
+      JSON.stringify({
+        search,
+        selectedGenera: [...selectedGenera],
+        openFamilies: [...openFamilies]
+      })
+    );
+  }, [type, search, selectedGenera, openFamilies]);
 
   // FlexSearch document index — rebuilt whenever wildlife data changes.
   // We index three fields: name, scientific_name, and a flattened field_values string.
