@@ -6,7 +6,7 @@ import { useState, useEffect, useContext, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
-import { X, Camera, Trash, GripVertical } from "lucide-react";
+import { X, Camera, Trash, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { findGlossaryEntry, highlightGlossaryTerms } from "../utils/glossaryHighlight";
 import { GlossaryTerm } from "../components/GlossaryTerm";
 
@@ -175,18 +175,53 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
 
 // FullscreenModal displays a large image preview and optionally renders
 // a watermarked version of the selected wildlife photo.
+// Navigation between photos is via the left/right arrow buttons, or a
+// left/right swipe on touch devices.
 function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
   const [watermarkedSrc, setWatermarkedSrc] = useState(null);
   const [index, setIndex] = useState(startIndex);
+  const touchStartRef = useRef(null);
+  const didSwipeRef = useRef(false);
 
   const matchedImage = images[index];
   const rawSrc = matchedImage?.isPending ? matchedImage.previewUrl : matchedImage?.image_path;
   const src = rawSrc?.startsWith("blob:") || rawSrc?.startsWith("http") ? rawSrc : `${baseUrl}${rawSrc}`;
 
-  // Clicking the photo advances to the next one for this species, wrapping back to the first.
-  const goToNext = e => {
-    e.stopPropagation();
-    setIndex(prev => (prev + 1) % images.length);
+  const goToNext = () => setIndex(prev => (prev + 1) % images.length);
+  const goToPrev = () => setIndex(prev => (prev - 1 + images.length) % images.length);
+
+  const SWIPE_THRESHOLD = 50;
+
+  const handleTouchStart = e => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+    didSwipeRef.current = false;
+  };
+
+  const handleTouchEnd = e => {
+    if (!touchStartRef.current || images.length <= 1) {
+      touchStartRef.current = null;
+      return;
+    }
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - touchStartRef.current.x;
+    const deltaY = t.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+      didSwipeRef.current = true;
+      if (deltaX < 0) goToNext();
+      else goToPrev();
+    }
+  };
+
+  // A swipe shouldn't also close the modal via the backdrop's click handler.
+  const handleBackdropClick = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      return;
+    }
+    onClose();
   };
 
   // useEffect(() => {
@@ -200,16 +235,47 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
   // }, [src, matchedImage, wildlife]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/95" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/95"
+      onClick={handleBackdropClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <img
         src={src}
         alt={wildlife?.name}
         draggable={false}
-        className={`object-contain max-w-full max-h-full rounded-xl select-none [-webkit-touch-callout:none] ${images.length > 1 ? "cursor-pointer" : ""}`}
-        onClick={images.length > 1 ? goToNext : e => e.stopPropagation()}
+        className="object-contain max-w-full max-h-full rounded-xl select-none [-webkit-touch-callout:none]"
+        onClick={e => e.stopPropagation()}
         onContextMenu={e => e.preventDefault()}
         onDragStart={e => e.preventDefault()}
       />
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              goToPrev();
+            }}
+            className="absolute p-2 text-white transition-colors -translate-y-1/2 rounded-full left-2 md:left-6 top-1/2 bg-black/40 hover:bg-black/60"
+            aria-label="Previous photo"
+          >
+            <ChevronLeft size={28} />
+          </button>
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            className="absolute p-2 text-white transition-colors -translate-y-1/2 rounded-full right-2 md:right-6 top-1/2 bg-black/40 hover:bg-black/60"
+            aria-label="Next photo"
+          >
+            <ChevronRight size={28} />
+          </button>
+        </>
+      )}
+
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
         <p className="font-bold">{wildlife.name}</p>
         <p className="italic">{wildlife.scientific_name}</p>
@@ -220,11 +286,7 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
           <p>{(matchedImage.metadata.model || matchedImage.metadata.make).trim()}</p>
         )}
         <p className="">© {matchedImage?.copyright || "Boulder County Nature Association"}</p>
-        {images.length > 1 && (
-          <p className="mt-1 text-xs text-white/60">
-            Photo {index + 1} of {images.length} — click photo for next
-          </p>
-        )}
+        {images.length > 1 && <p className="mt-1 text-xs text-white/60">Photo {index + 1} of {images.length}</p>}
       </div>
       <button className="absolute text-3xl text-white top-5 right-5" onClick={onClose}>
         &times;
