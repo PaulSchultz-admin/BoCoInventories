@@ -9,6 +9,7 @@ import { AdminContext } from "../services/adminContext";
 import { X, Camera, Trash, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { findGlossaryEntry, highlightGlossaryTerms } from "../utils/glossaryHighlight";
 import { GlossaryTerm } from "../components/GlossaryTerm";
+import { FILTERED_ORDER_PREFIX } from "./WildlifeDBs/WildlifeDB";
 
 // ImageEditModal shows the image upload/edit form in a modal.
 // It handles previewing a file, editing metadata, and optionally deleting the image.
@@ -524,6 +525,37 @@ export default function WildlifeDetails() {
       .catch(error => console.error("Error fetching glossary terms:", error));
   }, [category]);
 
+  // Species-to-species navigation: step through whichever filtered/sorted list
+  // the user was browsing on the database grid (persisted by WildlifeDB),
+  // falling back to the full alphabetical species list if opened directly.
+  const [orderedSpeciesIds, setOrderedSpeciesIds] = useState([]);
+  const speciesTouchStartRef = useRef(null);
+  const didSwipeSpeciesRef = useRef(false);
+
+  useEffect(() => {
+    if (isNew) return;
+    const stored = sessionStorage.getItem(FILTERED_ORDER_PREFIX + category);
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored);
+        if (Array.isArray(ids) && ids.includes(Number(wildlifeId))) {
+          setOrderedSpeciesIds(ids);
+          return;
+        }
+      } catch {
+        // fall through to the full-list fallback below
+      }
+    }
+    apiService
+      .getAllWildlife(category)
+      .then(data => {
+        const all = Object.values(data || {});
+        const sorted = [...all].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        setOrderedSpeciesIds(sorted.map(w => w.id));
+      })
+      .catch(() => setOrderedSpeciesIds([]));
+  }, [category, wildlifeId, isNew]);
+
   const handleInputChange = (key, value) => {
     setFilteredData(prev => ({ ...prev, [key]: value }));
   };
@@ -645,6 +677,51 @@ export default function WildlifeDetails() {
 
   if (!wildlife) return <div className="p-10 text-center">Loading...</div>;
 
+  // Arrow buttons and swipe gestures step to the adjacent species in
+  // orderedSpeciesIds, wrapping around at either end.
+  const currentSpeciesIndex = orderedSpeciesIds.indexOf(Number(wildlifeId));
+  const hasSpeciesSiblings = orderedSpeciesIds.length > 1 && currentSpeciesIndex !== -1;
+  const prevSpeciesId = hasSpeciesSiblings
+    ? orderedSpeciesIds[(currentSpeciesIndex - 1 + orderedSpeciesIds.length) % orderedSpeciesIds.length]
+    : null;
+  const nextSpeciesId = hasSpeciesSiblings
+    ? orderedSpeciesIds[(currentSpeciesIndex + 1) % orderedSpeciesIds.length]
+    : null;
+
+  const goToPrevSpecies = () => prevSpeciesId != null && navigate(`/${category}/${prevSpeciesId}`);
+  const goToNextSpecies = () => nextSpeciesId != null && navigate(`/${category}/${nextSpeciesId}`);
+
+  const handleSpeciesTouchStart = e => {
+    const t = e.touches[0];
+    speciesTouchStartRef.current = { x: t.clientX, y: t.clientY };
+    didSwipeSpeciesRef.current = false;
+  };
+
+  const handleSpeciesTouchEnd = e => {
+    if (!speciesTouchStartRef.current || !hasSpeciesSiblings) {
+      speciesTouchStartRef.current = null;
+      return;
+    }
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - speciesTouchStartRef.current.x;
+    const deltaY = t.clientY - speciesTouchStartRef.current.y;
+    speciesTouchStartRef.current = null;
+
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      didSwipeSpeciesRef.current = true;
+      if (deltaX < 0) goToNextSpecies();
+      else goToPrevSpecies();
+    }
+  };
+
+  // A swipe shouldn't also trigger the image's own click behavior (opening the
+  // fullscreen view, or the admin edit overlay).
+  const consumeSwipeGuard = () => {
+    if (!didSwipeSpeciesRef.current) return false;
+    didSwipeSpeciesRef.current = false;
+    return true;
+  };
+
   const handleDragStart = index => {
     dragItem.current = index;
   };
@@ -751,7 +828,11 @@ export default function WildlifeDetails() {
 
           {/* Right Column */}
           <div className="order-1 flex flex-col lg:order-2 lg:w-7/12">
-            <div className="relative group cursor-zoom-in bg-sand-100 rounded-2xl">
+            <div
+              className="relative group cursor-zoom-in bg-sand-100 rounded-2xl"
+              onTouchStart={handleSpeciesTouchStart}
+              onTouchEnd={handleSpeciesTouchEnd}
+            >
               <img
                 src={
                   highlight?.startsWith("blob:") || highlight?.startsWith("http")
@@ -760,7 +841,7 @@ export default function WildlifeDetails() {
                 }
                 alt={wildlife.name}
                 className="w-full h-[400px] object-contain rounded-2xl shadow-md transition-transform"
-                onClick={() => !admin && setImageClicked(highlight)}
+                onClick={() => !admin && !consumeSwipeGuard() && setImageClicked(highlight)}
                 onContextMenu={e => e.preventDefault()}
                 onDragStart={e => e.preventDefault()}
               />
@@ -768,6 +849,7 @@ export default function WildlifeDetails() {
                 <div
                   className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 cursor-pointer bg-black/40 group-hover:opacity-100 rounded-2xl"
                   onClick={() =>
+                    !consumeSwipeGuard() &&
                     setEditingImage(
                       images.find(img => img.image_path === highlight || img.previewUrl === highlight) || "new"
                     )
@@ -775,6 +857,30 @@ export default function WildlifeDetails() {
                 >
                   <Camera className="w-12 h-12 text-white" />
                 </div>
+              )}
+              {hasSpeciesSiblings && (
+                <>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      goToPrevSpecies();
+                    }}
+                    className="absolute z-10 p-2 text-white transition-colors -translate-y-1/2 rounded-full left-2 top-1/2 bg-black/40 hover:bg-black/60"
+                    aria-label="Previous species"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      goToNextSpecies();
+                    }}
+                    className="absolute z-10 p-2 text-white transition-colors -translate-y-1/2 rounded-full right-2 top-1/2 bg-black/40 hover:bg-black/60"
+                    aria-label="Next species"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </>
               )}
             </div>
 

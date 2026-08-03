@@ -145,6 +145,11 @@ function buildFieldText(item) {
 // page and back rather than resetting to default.
 const FILTER_STORAGE_PREFIX = "wildlifeFilters:";
 
+// The current filtered/sorted result order is also persisted, so the species
+// detail page's next/previous navigation can step through the same list the
+// user was browsing rather than the full unfiltered dataset.
+export const FILTERED_ORDER_PREFIX = "wildlifeFilteredOrder:";
+
 function loadFilterState(type) {
   try {
     const raw = sessionStorage.getItem(FILTER_STORAGE_PREFIX + type);
@@ -291,6 +296,12 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
 
     return [...base].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [search, wildlife, hasFilters, selectedGenera]);
+
+  // Persist the current result order so the species detail page can offer
+  // next/previous navigation through this same filtered list.
+  useEffect(() => {
+    sessionStorage.setItem(FILTERED_ORDER_PREFIX + type, JSON.stringify(filtered.map(w => w.id)));
+  }, [type, filtered]);
 
   return (
     <>
