@@ -41,7 +41,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
           <img
             src={`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
-            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            className="object-contain w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full text-sand-200">
