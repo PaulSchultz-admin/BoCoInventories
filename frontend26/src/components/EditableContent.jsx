@@ -73,14 +73,18 @@ export function EditableContent({ page, dataset }) {
     setIsUploadingImage(true);
     try {
       const { filename } = await apiService.uploadContentImage(dataset, file);
-      const url = apiService.getImageUrl(filename, dataset);
+      // A relative path, not the resolved absolute URL: content is edited in
+      // one environment (e.g. local dev) but its underlying data folder can
+      // be synced to another (e.g. production via upload_data.py), so the
+      // backend host must be resolved at render time, not baked in here.
+      const relativePath = `/api/get-image/${filename}?dataset=${dataset}`;
 
       const textarea = textareaRef.current;
       const start = textarea?.selectionStart ?? draft.length;
       const end = textarea?.selectionEnd ?? draft.length;
       const before = draft.slice(0, start);
       const after = draft.slice(end);
-      const markdown = `${blankLineBefore(before)}![](${url})${blankLineAfter(after)}`;
+      const markdown = `${blankLineBefore(before)}![](${relativePath})${blankLineAfter(after)}`;
       const next = before + markdown + after;
       setDraft(next);
 
@@ -96,6 +100,10 @@ export function EditableContent({ page, dataset }) {
       setIsUploadingImage(false);
     }
   };
+
+  // Resolve our own relative image paths against this environment's backend
+  // (see handleImageFileChange) — but leave any other absolute URL untouched.
+  const resolveImagePaths = text => text.replaceAll("](/api/get-image/", `](${import.meta.env.VITE_BACKEND_URL}/api/get-image/`);
 
   if (!loaded) return null;
 
@@ -160,7 +168,7 @@ export function EditableContent({ page, dataset }) {
       )}
       <div
         className="max-w-none prose prose-headings:font-serif"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(content)) }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(resolveImagePaths(content))) }}
       />
     </div>
   );

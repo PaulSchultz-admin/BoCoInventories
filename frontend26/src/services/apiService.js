@@ -354,7 +354,9 @@ const apiService = {
   },
 
   // uploadContentImage uploads an image to embed in a page's markdown body. Admin only.
-  // Returns { filename }, servable via getImageUrl(filename, dataset) below.
+  // Returns { filename }; EditableContent references it as a relative
+  // /api/get-image/ path so the content stays portable if its data folder is
+  // later synced to a different environment (see upload_data.py).
   uploadContentImage: async (dataset, file) => {
     try {
       const form = new FormData();
@@ -365,9 +367,6 @@ const apiService = {
       handleError(error);
     }
   },
-
-  // getImageUrl builds the URL for an uploaded image filename (shared by wildlife photos and content images).
-  getImageUrl: (filename, dataset = "butterflies") => `${BASE_URL}/api/get-image/${filename}?dataset=${dataset}`,
 
   // getGlossaryTerms returns all glossary terms for a dataset, sorted alphabetically.
   getGlossaryTerms: async (dataset = "butterflies") => {
