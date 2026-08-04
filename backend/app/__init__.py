@@ -8,6 +8,7 @@ from app.routes.categories import categories_bp
 from app.routes.images import images_bp
 from app.routes.auth import auth_bp
 from app.routes.content import content_bp
+from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import os
@@ -59,6 +60,13 @@ def create_app(test_config=None):
 
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+    # Called here (rather than gated behind `if __name__ == "__main__"` in
+    # main.py like db_helpers.init_all_dbs()) because gunicorn imports
+    # `main:app` directly, which skips that block entirely — this needs to
+    # run unconditionally on import so every worker process ends up with the
+    # AdminTokens table.
+    admin_sessions.init_db()
 
     # Set default config
     app.config.from_mapping(

@@ -7,7 +7,9 @@ Uses PBKDF2-SHA256 password hashing (via werkzeug) and secure random token gener
 
 Security Notes:
     - Passwords are hashed with PBKDF2-SHA256 (salted, via werkzeug.security)
-    - Tokens are stored in-memory with a 24-hour TTL (lost on server restart)
+    - Tokens are stored in a shared SQLite table (see admin_sessions.py) with a
+      24-hour TTL, so they're valid across every gunicorn worker process, not
+      just whichever one handled the login
     - Rate limiting: 5 failed attempts per IP per 5-minute window triggers a 429
     - ADMIN_PASSWORD environment variable controls access (defaults to 'dev')
 
@@ -25,6 +27,8 @@ import time
 import os
 from dotenv import load_dotenv
 
+from app import admin_sessions
+
 load_dotenv()
 
 # Load admin password from environment or use default 'dev' for development
@@ -33,11 +37,10 @@ ADMIN_PASSWORD_HASH = generate_password_hash(password)
 
 auth_bp = Blueprint('auth', __name__)
 
-# In-memory token store: token -> expiry timestamp
-TOKEN_TTL = 86400  # 24 hours
-valid_tokens: dict[str, float] = {}
-
 # Rate limiting: IP -> list of failed attempt timestamps
+# NOTE: still in-memory and thus per-worker, same as tokens used to be — but
+# lower-stakes (a temporarily less effective lockout, not a broken session),
+# so left as-is for now.
 _failed_attempts: dict[str, list[float]] = defaultdict(list)
 MAX_ATTEMPTS = 20
 RATE_WINDOW = 600  # 10 minutes
@@ -73,8 +76,9 @@ def admin_login():
 
     if check_password_hash(ADMIN_PASSWORD_HASH, password):
         _failed_attempts.pop(ip, None)
+        admin_sessions.purge_expired()
         token = secrets.token_hex(32)
-        valid_tokens[token] = time.time() + TOKEN_TTL
+        admin_sessions.store_token(token)
         return jsonify({"token": token}), 200
 
     _failed_attempts[ip].append(time.time())
@@ -83,12 +87,7 @@ def admin_login():
 def is_valid_token(token: str | None) -> bool:
     """Check whether a token is present and unexpired. Used by other route
     modules to gate admin-only mutations server-side."""
-    if not token or token not in valid_tokens:
-        return False
-    if time.time() < valid_tokens[token]:
-        return True
-    valid_tokens.pop(token, None)  # expired
-    return False
+    return admin_sessions.is_valid_token(token)
 
 
 @auth_bp.route("/api/admin-verify", methods=["POST"])
@@ -116,5 +115,5 @@ def admin_logout():
         200: {"message": "Logged out"} - Token has been invalidated
     """
     token = request.json.get("token")
-    valid_tokens.pop(token, None)
+    admin_sessions.delete_token(token)
     return jsonify({"message": "Logged out"}), 200
