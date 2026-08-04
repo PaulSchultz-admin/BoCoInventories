@@ -9,6 +9,10 @@ the same starting content so an admin can then diverge each one.
 """
 
 DEFAULT_PAGES = {
+    "info": """## Info
+
+Content coming soon.
+""",
     "about": """## About This Site
 
 ### Geographic Region
