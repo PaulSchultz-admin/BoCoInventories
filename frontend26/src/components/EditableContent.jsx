@@ -2,10 +2,10 @@
  * EditableContent renders the markdown body of a static page (About/Resources/Contact)
  * and, for logged-in admins, lets it be edited and saved in place.
  */
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { Pencil } from "lucide-react";
+import { Pencil, Image as ImageIcon } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
 
@@ -15,7 +15,10 @@ export function EditableContent({ page, dataset }) {
   const [draft, setDraft] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,12 +51,75 @@ export function EditableContent({ page, dataset }) {
     }
   };
 
+  // A blank line before/after the inserted image markdown, so it always lands
+  // in its own paragraph rather than merging into adjacent text and breaking
+  // that line's markdown (e.g. turning a "## Heading" into plain text).
+  const blankLineBefore = text => {
+    if (!text || text.endsWith("\n\n")) return "";
+    return text.endsWith("\n") ? "\n" : "\n\n";
+  };
+  const blankLineAfter = text => {
+    if (!text || text.startsWith("\n\n")) return "";
+    return text.startsWith("\n") ? "\n" : "\n\n";
+  };
+
+  // Uploads the selected file, then inserts its markdown image tag at the
+  // textarea's current cursor position (or the end, if it isn't focused).
+  const handleImageFileChange = async e => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const { filename } = await apiService.uploadContentImage(dataset, file);
+      const url = apiService.getImageUrl(filename, dataset);
+
+      const textarea = textareaRef.current;
+      const start = textarea?.selectionStart ?? draft.length;
+      const end = textarea?.selectionEnd ?? draft.length;
+      const before = draft.slice(0, start);
+      const after = draft.slice(end);
+      const markdown = `${blankLineBefore(before)}![](${url})${blankLineAfter(after)}`;
+      const next = before + markdown + after;
+      setDraft(next);
+
+      requestAnimationFrame(() => {
+        if (!textarea) return;
+        textarea.focus();
+        const cursor = (before + markdown).length;
+        textarea.setSelectionRange(cursor, cursor);
+      });
+    } catch (error) {
+      alert("Image upload failed: " + (error.response?.data?.error || error.message));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   if (!loaded) return null;
 
   if (isEditing) {
     return (
       <div>
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingImage}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-pink-700 transition-colors bg-white border border-pink-300 rounded-full shadow-sm hover:bg-pink-50 disabled:opacity-50"
+          >
+            <ImageIcon size={14} /> {isUploadingImage ? "Uploading..." : "Insert Image"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageFileChange}
+          />
+        </div>
         <textarea
+          ref={textareaRef}
           value={draft}
           onChange={e => setDraft(e.target.value)}
           rows={20}
@@ -61,7 +127,7 @@ export function EditableContent({ page, dataset }) {
         />
         <p className="mt-2 text-sm text-sand-400">
           Supports markdown: <code>## Heading</code>, <code>[link text](url)</code>, <code>**bold**</code>,{" "}
-          <code>- list item</code>, <code>---</code> for a divider.
+          <code>- list item</code>, <code>---</code> for a divider, or click "Insert Image" above to upload a photo.
         </p>
         <div className="flex justify-end gap-3 mt-4">
           <button

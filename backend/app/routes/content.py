@@ -10,17 +10,20 @@ sent as `Authorization: Bearer <token>`.
 Routes include:
     - GET /api/page-content/<page>: Retrieve a page's markdown body
     - PUT /api/page-content/<page>: Replace a page's markdown body (admin only)
+    - POST /api/content-images/: Upload an image to embed in page content (admin only)
     - GET /api/glossary/: List all glossary terms, alphabetically
     - POST /api/glossary/: Create a new glossary term (admin only)
     - PUT /api/glossary/<id>: Edit an existing glossary term (admin only)
     - DELETE /api/glossary/<id>: Delete a glossary term (admin only)
 """
 
+import os
 import sqlite3
 from flask import Blueprint, request, jsonify
 from app import db_helpers
 from app.content_defaults import VALID_PAGES
 from app.routes.auth import is_valid_token
+from app.utils import save_file
 
 content_bp = Blueprint("content", __name__)
 
@@ -98,6 +101,50 @@ def update_page_content(page):
     conn.close()
 
     return jsonify({"message": "Page content updated"}), 200
+
+
+@content_bp.route("/api/content-images/", methods=["POST"])
+def upload_content_image():
+    """
+    Uploads an image to embed in a page's markdown body. Requires admin
+    authentication. The returned filename is served the same way wildlife
+    photos are, via GET /api/get-image/<filename>?dataset=<dataset>.
+
+    Example request:
+    POST /api/content-images/?dataset=butterflies
+    Form Data: image_file=<file>
+
+    Example output:
+    {
+        "filename": "3f9c2a1b4e7d4f0a9c6e1a2b3c4d5e6f.jpg"
+    }
+    """
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+
+    image_file = request.files.get("image_file")
+    if not image_file:
+        return jsonify({"error": "image_file is required"}), 400
+
+    file_length = image_file.seek(0, os.SEEK_END)
+    image_file.seek(0, os.SEEK_SET)
+    if file_length > 10 * 1024 * 1024:
+        return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+    if not image_file.mimetype.startswith("image/"):
+        return (
+            jsonify(
+                {
+                    "error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"
+                }
+            ),
+            400,
+        )
+
+    db_helpers.ensure_upload_folder_exists()
+    filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
+
+    return jsonify({"filename": filename}), 201
 
 
 @content_bp.route("/api/glossary/", methods=["GET"])

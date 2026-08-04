@@ -353,6 +353,22 @@ const apiService = {
     }
   },
 
+  // uploadContentImage uploads an image to embed in a page's markdown body. Admin only.
+  // Returns { filename }, servable via getImageUrl(filename, dataset) below.
+  uploadContentImage: async (dataset, file) => {
+    try {
+      const form = new FormData();
+      form.append("image_file", file);
+      const response = await api.post(`/api/content-images/?dataset=${dataset}`, form, { headers: authHeaders() });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // getImageUrl builds the URL for an uploaded image filename (shared by wildlife photos and content images).
+  getImageUrl: (filename, dataset = "butterflies") => `${BASE_URL}/api/get-image/${filename}?dataset=${dataset}`,
+
   // getGlossaryTerms returns all glossary terms for a dataset, sorted alphabetically.
   getGlossaryTerms: async (dataset = "butterflies") => {
     try {
