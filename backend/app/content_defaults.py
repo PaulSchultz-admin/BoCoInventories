@@ -13,6 +13,7 @@ DEFAULT_PAGES = {
 
 Content coming soon.
 """,
+    "glossary": "",
     "about": """## About This Site
 
 ### Geographic Region

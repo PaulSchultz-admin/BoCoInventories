@@ -9,6 +9,7 @@ import { Pencil, Plus, Trash } from "lucide-react";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
 import { GlossaryTermModal } from "../components/GlossaryTermModal";
+import { EditableContent } from "../components/EditableContent";
 import { sites } from "../data/sites";
 
 // termToId converts a display term into a safe DOM id for anchor links.
@@ -221,6 +222,10 @@ export const Glossary = () => {
               );
             })}
           </dl>
+
+          <div className="mt-12">
+            <EditableContent page="glossary" dataset={category} />
+          </div>
         </div>
       )}
 
