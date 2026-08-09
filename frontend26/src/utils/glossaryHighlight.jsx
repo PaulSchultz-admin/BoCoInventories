@@ -4,7 +4,7 @@
  */
 import { GlossaryTerm } from "../components/GlossaryTerm";
 
-function escapeRegExp(str) {
+export function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

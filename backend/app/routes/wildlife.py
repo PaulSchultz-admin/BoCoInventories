@@ -687,7 +687,8 @@ def get_wildlife():
     Retrieves all wildlife entries, including their associated custom field values.
 
     Each entry includes id, name, scientific_name, category_id, all the custom field values,
-    and a space-joined "locations" string of the distinct location_taken values across its images.
+    and space-joined "locations", "copyrights", and "comments" strings of the distinct
+    location_taken/copyright/comment values across its images (used to power search).
     Custom fields have their name as the key and their value as the value.
     Text field values are returned as strings; integer field values are returned as integers.
 
@@ -760,14 +761,26 @@ def get_wildlife():
                 {"field_id": field["id"], "value": field_value, "name": field["name"]}
             )
 
-        image_locations = db_helpers.select_multiple(
-            "SELECT DISTINCT location_taken FROM Images "
-            "WHERE wildlife_id = ? AND location_taken IS NOT NULL AND location_taken != ''",
+        image_meta = db_helpers.select_multiple(
+            "SELECT location_taken, copyright, comment FROM Images WHERE wildlife_id = ?",
             [wildlife["id"]],
         )
-        locations = " ".join(row["location_taken"] for row in image_locations)
 
-        out.append({**wildlife, "field_values": cleaned_field_values, "locations": locations})
+        def unique_joined(column):
+            # dict.fromkeys dedupes while preserving first-seen order (unlike a set).
+            return " ".join(dict.fromkeys(row[column] for row in image_meta if row[column]))
+
+        locations = unique_joined("location_taken")
+        copyrights = unique_joined("copyright")
+        comments = unique_joined("comment")
+
+        out.append({
+            **wildlife,
+            "field_values": cleaned_field_values,
+            "locations": locations,
+            "copyrights": copyrights,
+            "comments": comments,
+        })
     return jsonify(out), 200
 
 

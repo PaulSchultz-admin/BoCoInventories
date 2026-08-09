@@ -21,7 +21,7 @@ export const Info = () => {
 
       {/* Main Content */}
       <div className="max-w-[1183px] px-5 mt-14 mb-20 mx-auto">
-        <EditableContent page="info" dataset={category} />
+        <EditableContent page="info" dataset={category} linkGlossary />
       </div>
     </div>
   );

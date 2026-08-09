@@ -8,8 +8,9 @@ import DOMPurify from "dompurify";
 import { Pencil, Image as ImageIcon } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
+import { highlightGlossaryInHtml } from "../utils/highlightGlossaryInHtml";
 
-export function EditableContent({ page, dataset }) {
+export function EditableContent({ page, dataset, linkGlossary = false }) {
   const { admin } = useContext(AdminContext);
   const [content, setContent] = useState("");
   const [draft, setDraft] = useState("");
@@ -17,6 +18,7 @@ export function EditableContent({ page, dataset }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [glossaryTerms, setGlossaryTerms] = useState([]);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -32,6 +34,17 @@ export function EditableContent({ page, dataset }) {
       cancelled = true;
     };
   }, [page, dataset]);
+
+  useEffect(() => {
+    if (!linkGlossary) return;
+    let cancelled = false;
+    apiService.getGlossaryTerms(dataset).then(data => {
+      if (!cancelled) setGlossaryTerms(data || []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [linkGlossary, dataset]);
 
   const handleEdit = () => {
     setDraft(content);
@@ -105,6 +118,11 @@ export function EditableContent({ page, dataset }) {
   // (see handleImageFileChange) — but leave any other absolute URL untouched.
   const resolveImagePaths = text => text.replaceAll("](/api/get-image/", `](${import.meta.env.VITE_BACKEND_URL}/api/get-image/`);
 
+  const renderedHtml = () => {
+    const sanitized = DOMPurify.sanitize(marked.parse(resolveImagePaths(content)));
+    return linkGlossary ? highlightGlossaryInHtml(sanitized, glossaryTerms) : sanitized;
+  };
+
   if (!loaded) return null;
 
   if (isEditing) {
@@ -168,7 +186,7 @@ export function EditableContent({ page, dataset }) {
       )}
       <div
         className="max-w-none prose prose-headings:font-serif"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(resolveImagePaths(content))) }}
+        dangerouslySetInnerHTML={{ __html: renderedHtml() }}
       />
     </div>
   );

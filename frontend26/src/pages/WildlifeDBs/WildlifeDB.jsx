@@ -1,7 +1,9 @@
 /**
  * WildlifeDB renders a searchable catalog of wildlife items for a given dataset.
  * It includes a filter sidebar, searchable results, and an admin-only add card.
- * Uses FlexSearch to search across name, scientific_name, all field_values, and image locations.
+ * Uses FlexSearch to search across a per-dataset configured set of fields —
+ * see SEARCH_CONFIG below — falling back to name, scientific_name, all
+ * field_values, and image locations for any dataset without its own entry.
  */
 import { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { AdminContext } from "../../services/adminContext";
@@ -134,10 +136,53 @@ function FamilyFilter({
   );
 }
 
-// Build a flat searchable string from a wildlife item's field values.
-function buildFieldText(item) {
+// Per-dataset search field configuration: which Wildlife columns, custom
+// species-account Fields (by name), and image-metadata columns the search
+// bar indexes. Datasets without an entry here fall back to
+// DEFAULT_SEARCH_CONFIG (search everything), preserving the original
+// behavior until each dataset's fields are deliberately curated.
+const DEFAULT_SEARCH_CONFIG = {
+  baseFields: ["name", "scientific_name"],
+  speciesFields: null, // null = every custom field value, unfiltered
+  imageFields: ["locations"]
+};
+
+const SEARCH_CONFIG = {
+  dragonflies: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: ["Habitat", "Appearance", "Behavior"],
+    imageFields: ["locations", "copyrights", "comments"]
+  },
+  butterflies: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: ["Appearance", "Habitat", "Host plants"],
+    imageFields: ["locations", "copyrights", "comments"]
+  },
+  wildflowers: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: ["General", "Bloom", "Flowers/Fruit", "Leaves", "Habitat", "ID Hints"],
+    imageFields: ["locations", "copyrights", "comments"]
+  }
+};
+
+function getSearchConfig(type) {
+  return { ...DEFAULT_SEARCH_CONFIG, ...SEARCH_CONFIG[type] };
+}
+
+// Build a flat searchable string from a wildlife item's field values,
+// restricted to speciesFields (by Field name) when given, otherwise all of them.
+function buildFieldText(item, speciesFields) {
   if (!item.field_values?.length) return "";
-  return item.field_values.map(fv => fv.value).join(" ");
+  const values = speciesFields
+    ? item.field_values.filter(fv => speciesFields.includes(fv.name))
+    : item.field_values;
+  return values.map(fv => fv.value).join(" ");
+}
+
+// Build a flat searchable string from a wildlife item's aggregated image
+// metadata (locations/copyrights/comments), restricted to imageFields.
+function buildImageText(item, imageFields) {
+  return imageFields.map(key => item[key] ?? "").join(" ");
 }
 
 // Filter state (search text, selected genera, expanded families) is persisted
@@ -202,8 +247,10 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     fetchData();
   }, [type]);
 
-  // Rebuild the FlexSearch index whenever the wildlife array changes.
+  // Rebuild the FlexSearch index whenever the wildlife array (or dataset) changes.
   useEffect(() => {
+    const config = getSearchConfig(type);
+
     const index = new FlexSearch.Document({
       tokenize: "forward",
       cache: 100,
@@ -213,7 +260,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
           { field: "name", tokenize: "forward", resolution: 9 },
           { field: "scientific_name", tokenize: "forward", resolution: 7 },
           { field: "field_text", tokenize: "forward", resolution: 5 },
-          { field: "locations", tokenize: "forward", resolution: 5 }
+          { field: "image_text", tokenize: "forward", resolution: 5 }
         ]
       }
     });
@@ -221,15 +268,15 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     for (const w of wildlife) {
       index.add({
         id: w.id,
-        name: w.name ?? "",
-        scientific_name: w.scientific_name ?? "",
-        field_text: buildFieldText(w),
-        locations: w.locations ?? ""
+        name: config.baseFields.includes("name") ? (w.name ?? "") : "",
+        scientific_name: config.baseFields.includes("scientific_name") ? (w.scientific_name ?? "") : "",
+        field_text: buildFieldText(w, config.speciesFields),
+        image_text: buildImageText(w, config.imageFields)
       });
     }
 
     indexRef.current = index;
-  }, [wildlife]);
+  }, [wildlife, type]);
 
   // Build a map of family -> Set of genera from field_values.
   const familyMap = useMemo(() => {
