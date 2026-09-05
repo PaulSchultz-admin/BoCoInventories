@@ -26,7 +26,9 @@ export const NavBar = () => {
   // currentSite is the dataset currently selected via the URL param.
   const currentSite = sites.find(s => s.id === category) || sites[0];
   // otherSites are shown in the hover dropdown to switch between datasets.
-  const otherSites = sites.filter(s => s.id !== category);
+  // Hidden sites (e.g. an unreleased dataset) are left out of this list but
+  // still resolve correctly when visited directly by URL.
+  const otherSites = sites.filter(s => s.id !== category && !s.hidden);
 
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);

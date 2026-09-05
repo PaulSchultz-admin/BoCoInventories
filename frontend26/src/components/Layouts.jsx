@@ -4,6 +4,7 @@ import { NavBar } from "./NavBar";
 import { ButterflyDB } from "../pages/WildlifeDBs/ButterflyDB";
 import { DragonflyDB } from "../pages/WildlifeDBs/DragonflyDB";
 import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
+import { LichenDB } from "../pages/WildlifeDBs/LichenDB";
 
 export const Layout = () => {
   return (
@@ -27,6 +28,7 @@ export const DynamicDBRouter = () => {
     butterflies: <ButterflyDB />,
     dragonflies: <DragonflyDB />,
     wildflowers: <WildflowerDB />,
+    lichens: <LichenDB />,
   };
 
   // Return the correct component, or a 404/Fallback if the category doesn't exist

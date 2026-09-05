@@ -287,6 +287,26 @@ def _dedupe_family_field(conn):
     conn.commit()
 
 
+def _seed_root_category(conn, dataset_name):
+    """Ensure a root category exists whose name matches the dataset folder.
+
+    The frontend resolves the URL's dataset segment (e.g. "lichens") to a
+    root Category by case-insensitive name match, both to list a new entry's
+    fields and to pick a category_id when saving it. create.sql seeds no
+    Categories rows, so without this a brand-new dataset folder has zero
+    categories: the "add new" form shows no fields, and saving fails with
+    "Category not found".
+    """
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Categories WHERE parent_id IS NULL")
+    if cursor.fetchone()[0] == 0:
+        label = dataset_name.replace("_", " ").replace("-", " ").title()
+        cursor.execute(
+            "INSERT INTO Categories (name, parent_id) VALUES (?, NULL)", (label,)
+        )
+        conn.commit()
+
+
 def _seed_family_field(conn):
     """Ensure a 'family' TEXT field exists and is associated with all root categories."""
     cursor = conn.cursor()
@@ -337,7 +357,7 @@ def _seed_site_content(conn):
     conn.commit()
 
 
-EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers"]
+EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens"]
 
 
 def init_all_dbs():
@@ -406,6 +426,7 @@ def init_all_dbs():
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        _seed_root_category(conn, entry.name)
         _dedupe_family_field(conn)
         _seed_family_field(conn)
         _seed_site_content(conn)

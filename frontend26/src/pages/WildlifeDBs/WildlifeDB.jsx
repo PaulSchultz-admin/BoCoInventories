@@ -162,6 +162,11 @@ const SEARCH_CONFIG = {
     baseFields: ["name", "scientific_name"],
     speciesFields: ["General", "Bloom", "Flowers/Fruit", "Leaves", "Habitat", "ID Hints"],
     imageFields: ["locations", "copyrights", "comments"]
+  },
+  lichens: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: ["Typical Color", "Growth Form", "Visual Highlights", "Habitat", "Other"],
+    imageFields: ["locations", "copyrights", "comments"]
   }
 };
 
