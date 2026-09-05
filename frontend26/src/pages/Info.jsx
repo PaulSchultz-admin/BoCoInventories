@@ -15,7 +15,7 @@ export const Info = () => {
       >
         <div className="absolute inset-0 bg-black opacity-40" />
         <h1 className="relative z-10 p-5 font-serif text-6xl font-bold tracking-wide text-white drop-shadow-lg">
-          Info
+          Science
         </h1>
       </div>
 

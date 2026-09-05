@@ -12,7 +12,7 @@ import { sites } from "../data/sites";
 // Links, relative to the current dataset (e.g. "/butterflies/about").
 // Also used by WildlifeDB's hero banner.
 export const navLinks = [
-  { name: "Info", path: "info" },
+  { name: "Science", path: "info" },
   { name: "Resources", path: "resources" },
   { name: "Glossary", path: "glossary" },
   { name: "About", path: "about" },
