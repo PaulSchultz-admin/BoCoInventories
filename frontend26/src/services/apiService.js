@@ -414,6 +414,43 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
+  },
+
+  // getLocationPhotos returns the geotagged photos shown as pins on the inset map.
+  getLocationPhotos: async (dataset = "butterflies") => {
+    try {
+      const response = await api.get(`/api/get-location-photos/?dataset=${dataset}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // locationPhotoImageUrl builds the URL for a location photo's image file.
+  locationPhotoImageUrl: (id, dataset = "butterflies") =>
+    `${BASE_URL}/api/get-location-photo-image/${id}?dataset=${dataset}`,
+
+  // createLocationPhoto uploads a geotagged photo (GPS pulled from its EXIF data) with a comment.
+  createLocationPhoto: async (imageFile, comment, dataset = "butterflies") => {
+    try {
+      const form = new FormData();
+      form.append("image_file", imageFile);
+      form.append("comment", comment || "");
+      const response = await api.post(`/api/create-location-photo/?dataset=${dataset}`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // deleteLocationPhoto removes a location photo pin from the inset map.
+  deleteLocationPhoto: async (id, dataset = "butterflies") => {
+    try {
+      const response = await api.delete(`/api/delete-location-photo/?id=${id}&dataset=${dataset}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
   }
 };
 

@@ -8,6 +8,7 @@ from app.routes.categories import categories_bp
 from app.routes.images import images_bp
 from app.routes.auth import auth_bp
 from app.routes.content import content_bp
+from app.routes.location_photos import location_photos_bp
 from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -150,5 +151,6 @@ def create_app(test_config=None):
     app.register_blueprint(images_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(content_bp)
+    app.register_blueprint(location_photos_bp)
 
     return app

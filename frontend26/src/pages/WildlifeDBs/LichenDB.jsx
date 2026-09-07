@@ -9,6 +9,7 @@ export function LichenDB() {
       heroImage="/lichen-hero.jpg"
       heroPosition="50% 50%"
       title="Lichens of Boulder County"
+      showLocationsMap
     />
   );
 }

@@ -82,3 +82,14 @@ CREATE TABLE IF NOT EXISTS GlossaryTerms (
   term TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL
 );
+
+-- Standalone geotagged photos (e.g. a boulder covered in lichen) shown as
+-- pins on the sidebar inset map. Unrelated to species Images: these aren't
+-- attached to a Wildlife record, just a location + a photo + a comment.
+CREATE TABLE IF NOT EXISTS LocationPhotos (
+  id INTEGER PRIMARY KEY,
+  image_path TEXT NOT NULL,
+  latitude REAL NOT NULL,
+  longitude REAL NOT NULL,
+  comment TEXT NOT NULL DEFAULT ''
+);

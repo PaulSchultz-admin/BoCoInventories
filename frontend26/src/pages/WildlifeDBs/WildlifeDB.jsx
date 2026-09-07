@@ -12,6 +12,7 @@ import { Filter, X } from "lucide-react";
 import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
 import { navLinks } from "../../components/NavBar";
+import { LocationsMap } from "../../components/LocationsMap";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
 function AddCard({ wildlifeType, label }) {
@@ -215,7 +216,7 @@ function loadFilterState(type) {
   }
 }
 
-export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", title }) {
+export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", title, showLocationsMap = false }) {
   const savedFilters = loadFilterState(type);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
   const [wildlife, setWildlife] = useState([]);
@@ -396,24 +397,28 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       <div className="p-5">
         <div className="flex gap-5 mx-auto max-w-375">
           {/* Sidebar - Desktop Only */}
-          <aside className="hidden p-5 font-serif border rounded md:block w-70 shrink-0 border-sand-200 bg-sand-100 h-max">
-            <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
-              Filters
-            </h5>
-            {[...familyMap.entries()].map(([family, genera]) => (
-              <FamilyFilter
-                key={family}
-                family={family}
-                genera={genera}
-                openFamilies={openFamilies}
-                setOpenFamilies={setOpenFamilies}
-                familyChecked={familyState(family)}
-                toggleFamily={toggleFamily}
-                selectedGenera={selectedGenera}
-                toggleGenus={toggleGenus}
-              />
-            ))}
-          </aside>
+          <div className="hidden md:flex md:flex-col gap-5 w-70 shrink-0">
+            <aside className="p-5 font-serif border rounded border-sand-200 bg-sand-100 h-max">
+              <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
+                Filters
+              </h5>
+              {[...familyMap.entries()].map(([family, genera]) => (
+                <FamilyFilter
+                  key={family}
+                  family={family}
+                  genera={genera}
+                  openFamilies={openFamilies}
+                  setOpenFamilies={setOpenFamilies}
+                  familyChecked={familyState(family)}
+                  toggleFamily={toggleFamily}
+                  selectedGenera={selectedGenera}
+                  toggleGenus={toggleGenus}
+                />
+              ))}
+            </aside>
+
+            {showLocationsMap && <LocationsMap type={type} />}
+          </div>
 
           {/* Main content */}
           <main className="w-full min-w-0">
