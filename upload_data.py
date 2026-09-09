@@ -13,7 +13,7 @@ REMOTE_DATA_DIR = "/app/data"
 BACKEND_DIR = Path(__file__).resolve().parent / "backend"
 DATA_DIR = BACKEND_DIR / "data"
 
-DATASETS = ["butterflies", "butterflies-us", "dragonflies", "wildflowers", "lichens"]
+DATASETS = ["butterflies", "butterflies-us", "dragonflies", "wildflowers", "lichens", "bats"]
 
 
 def main():

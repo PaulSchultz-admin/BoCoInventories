@@ -35,5 +35,14 @@ export const sites = [
     label: "Lichens",
     hoverBg: "hover:bg-teal-50",
     hidden: true
+  },
+  {
+    id: "bats",
+    path: "/bats",
+    logo: "/bat-logo.png",
+    heroImage: "/bat-hero.jpg",
+    label: "Bats",
+    hoverBg: "hover:bg-slate-100",
+    hidden: true
   }
 ];

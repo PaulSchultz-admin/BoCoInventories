@@ -97,18 +97,16 @@ def create_app(test_config=None):
                 app.config["DATASET_CONFIGS"].keys()
             )[0]
 
-    # Enable CORS for frontend
+    # Enable CORS for frontend. Vite picks the next free port (3000, 3001, ...)
+    # when something else already holds 3000, so any localhost/127.0.0.1 port
+    # is allowed in dev rather than hardcoding 3000; FRONTEND_URL covers prod.
+    cors_origins = [r"^http://localhost:\d+$", r"^http://127\.0\.0\.1:\d+$"]
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        cors_origins.append(frontend_url)
     CORS(
         app,
-        origins=[
-            o
-            for o in [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                os.getenv("FRONTEND_URL"),
-            ]
-            if o is not None
-        ],
+        origins=cors_origins,
         supports_credentials=True,
     )
     logger.debug("CORS enabled for all routes.")

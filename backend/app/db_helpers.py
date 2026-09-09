@@ -357,7 +357,7 @@ def _seed_site_content(conn):
     conn.commit()
 
 
-EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens"]
+EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats"]
 
 
 def init_all_dbs():

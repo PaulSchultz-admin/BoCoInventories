@@ -168,6 +168,16 @@ const SEARCH_CONFIG = {
     baseFields: ["name", "scientific_name"],
     speciesFields: ["Typical Color", "Growth Form", "Visual Highlights", "Habitat", "Other"],
     imageFields: ["locations", "copyrights", "comments"]
+  },
+  bats: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: [
+      "Where can it be found in Colorado?",
+      "When can it be found in Colorado?",
+      "What does it eat?",
+      "Where does it roost?"
+    ],
+    imageFields: ["locations", "copyrights", "comments"]
   }
 };
 
@@ -298,6 +308,17 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
   }, [wildlife]);
 
+  // Drop any selected genera that no longer exist in the current data (e.g.
+  // stale sessionStorage from before the dataset was populated), so a phantom
+  // filter can't silently zero out results with no checkbox left to un-check.
+  useEffect(() => {
+    const validGenera = new Set([...familyMap.values()].flatMap(genera => [...genera]));
+    setSelectedGenera(prev => {
+      const next = new Set([...prev].filter(g => validGenera.has(g)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [familyMap]);
+
   const toggleFamily = family => {
     const genera = familyMap.get(family) || new Set();
     setSelectedGenera(prev => {
@@ -399,9 +420,19 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
           {/* Sidebar - Desktop Only */}
           <div className="hidden md:flex md:flex-col gap-5 w-70 shrink-0">
             <aside className="p-5 font-serif border rounded border-sand-200 bg-sand-100 h-max">
-              <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
-                Filters
-              </h5>
+              <div className="flex items-center justify-between mb-5 ml-2">
+                <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase">
+                  Filters
+                </h5>
+                {hasFilters && (
+                  <button
+                    onClick={() => setSelectedGenera(new Set())}
+                    className="text-xs text-sand-400 hover:text-sand-600 transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
               {[...familyMap.entries()].map(([family, genera]) => (
                 <FamilyFilter
                   key={family}
