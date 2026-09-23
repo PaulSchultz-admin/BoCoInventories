@@ -44,5 +44,14 @@ export const sites = [
     label: "Bats",
     hoverBg: "hover:bg-slate-100",
     hidden: true
+  },
+  {
+    id: "raptors",
+    path: "/raptors",
+    logo: "/raptor-logo.jpg",
+    heroImage: "/raptor-hero.JPG",
+    label: "Raptors",
+    hoverBg: "hover:bg-sky-50",
+    hidden: true
   }
 ];
