@@ -462,12 +462,13 @@ export function WildlifeDB({
   const hasFilters = selectedGenera.size > 0;
 
   // Apply FlexSearch and genus filters to produce the final result list.
-  // When the search box is empty we show this view's normal subset (common
-  // species on the main page, less-common on the "More" page). Once there's
-  // a search term, it searches the *entire* dataset instead, so a species
-  // can be found regardless of which page it normally lives on.
+  // With no search term and no genus filter selected, we show this view's
+  // normal subset (common species on the main page, less-common on the
+  // "More" page). Once either is active, it operates over the *entire*
+  // dataset instead, so a species can be found/filtered regardless of which
+  // page it normally lives on.
   const filtered = useMemo(() => {
-    let base = search.trim() ? wildlife : visibleWildlife;
+    let base = (search.trim() || hasFilters) ? wildlife : visibleWildlife;
 
     if (search.trim() && indexRef.current) {
       // Search across all three indexed fields and union the matching IDs.
