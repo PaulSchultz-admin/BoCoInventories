@@ -639,6 +639,17 @@ export function WildlifeDB({
                 </NavLink>
               </div>
             )}
+
+            {useDisplayList && moreView && (
+              <div className="mt-8 text-center">
+                <NavLink
+                  to={`/${type}`}
+                  className="font-serif italic text-sand-400 hover:text-sand-600 transition-colors"
+                >
+                  Back
+                </NavLink>
+              </div>
+            )}
           </main>
         </div>
       </div>
