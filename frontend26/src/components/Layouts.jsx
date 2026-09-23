@@ -6,6 +6,8 @@ import { DragonflyDB } from "../pages/WildlifeDBs/DragonflyDB";
 import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
 import { LichenDB } from "../pages/WildlifeDBs/LichenDB";
 import { BatDB } from "../pages/WildlifeDBs/BatDB";
+import { RaptorDB } from "../pages/WildlifeDBs/RaptorDB";
+import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 
 export const Layout = () => {
   return (
@@ -31,8 +33,22 @@ export const DynamicDBRouter = () => {
     wildflowers: <WildflowerDB />,
     lichens: <LichenDB />,
     bats: <BatDB />,
+    raptors: <RaptorDB />,
   };
 
   // Return the correct component, or a 404/Fallback if the category doesn't exist
   return components[category] || <div className="p-10">Category not found.</div>;
 }
+
+// DynamicMoreDBRouter renders a category's "More" page — the less-common
+// species grid linked from the main page's "More" link. Only categories that
+// opt into the display-list split (currently just raptors) have one.
+export const DynamicMoreDBRouter = () => {
+  const { category } = useParams();
+
+  const components = {
+    raptors: <RaptorMoreDB />
+  };
+
+  return components[category] || <div className="p-10">This category has no "More" page.</div>;
+};

@@ -28,6 +28,7 @@ import logging
 import os
 from app import db_helpers
 from app.routes.images import delete_image_by_id
+from app.routes.display_list import remove_wildlife_id
 from exif import Image
 
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
@@ -80,6 +81,7 @@ def delete_wildlife():
     db_helpers.delete(
         "DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id]
     )
+    remove_wildlife_id(int(wildlife_id))
     return jsonify({"message": "Wildlife successfully deleted"}), 200
 
 

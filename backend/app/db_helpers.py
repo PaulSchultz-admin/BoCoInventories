@@ -81,6 +81,13 @@ def get_active_database_path() -> str:
     return DEFAULT_DB_PATH
 
 
+def get_active_data_folder() -> str:
+    """Returns the active dataset's data folder (the parent of its database.db
+    and uploaded_images/), for storing dataset-scoped flat files that don't
+    belong in the SQL schema, like display_list.json."""
+    return os.path.dirname(get_active_database_path())
+
+
 def ensure_upload_folder_exists():
     folder = get_active_image_upload_folder()
     if not os.path.exists(folder):
@@ -357,7 +364,7 @@ def _seed_site_content(conn):
     conn.commit()
 
 
-EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats"]
+EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats", "raptors"]
 
 
 def init_all_dbs():

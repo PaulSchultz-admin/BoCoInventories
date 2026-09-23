@@ -416,6 +416,32 @@ const apiService = {
     }
   },
 
+  // getDisplayList returns the dataset's list of "common" wildlife IDs (shown
+  // on the main grid; everything else shows on the "More" page). Datasets
+  // without the feature configured yet return an empty list.
+  getDisplayList: async (dataset = "butterflies") => {
+    try {
+      const response = await api.get(`/api/display-list/?dataset=${dataset}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // updateDisplayList replaces the dataset's list of "common" wildlife IDs. Admin only.
+  updateDisplayList: async (dataset, commonIds) => {
+    try {
+      const response = await api.put(
+        `/api/display-list/?dataset=${dataset}`,
+        { common_ids: commonIds },
+        { headers: authHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // getLocationPhotos returns the geotagged photos shown as pins on the inset map.
   getLocationPhotos: async (dataset = "butterflies") => {
     try {

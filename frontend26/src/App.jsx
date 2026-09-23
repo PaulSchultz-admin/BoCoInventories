@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 // Pages importing
-import { Layout, WildlifeLayout, DynamicDBRouter } from "./components/Layouts";
+import { Layout, WildlifeLayout, DynamicDBRouter, DynamicMoreDBRouter } from "./components/Layouts";
 
 import WildlifeDetails from "./pages/WildlifeDetails";
 import { Info } from "./pages/Info";
@@ -26,6 +26,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <DynamicDBRouter /> // A simple wrapper to show the right DB component
+          },
+          {
+            path: "more",
+            element: <DynamicMoreDBRouter />
           },
           {
             path: "info",

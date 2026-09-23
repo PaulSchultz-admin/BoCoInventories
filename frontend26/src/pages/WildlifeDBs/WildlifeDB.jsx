@@ -137,6 +137,76 @@ function FamilyFilter({
   );
 }
 
+// EditDisplayListModal lets an admin choose which species count as "common"
+// (shown on the main grid) versus "less common" (shown on the "More" page).
+function EditDisplayListModal({ allWildlife, commonIds, onSave, onClose }) {
+  const [checked, setChecked] = useState(new Set(commonIds));
+  const [saving, setSaving] = useState(false);
+  const sorted = [...allWildlife].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  const toggle = id =>
+    setChecked(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave([...checked]);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div
+        className="w-full max-w-sm max-h-[80vh] flex flex-col p-6 shadow-2xl bg-white rounded-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <h2 className="mb-1 text-xl font-serif font-bold text-sand-600">Edit display list</h2>
+        <p className="mb-4 text-sm text-sand-400">
+          Checked species show on the main page. Unchecked species show on the "More" page.
+        </p>
+        <div className="flex-1 overflow-y-auto -mx-1 px-1">
+          {sorted.map(w => (
+            <label
+              key={w.id}
+              className="flex items-center gap-3 py-1.5 px-1 rounded cursor-pointer hover:bg-sand-100"
+            >
+              <input
+                type="checkbox"
+                className="accent-sand-400 w-4 h-4 shrink-0"
+                checked={checked.has(w.id)}
+                onChange={() => toggle(w.id)}
+              />
+              <span className="font-serif text-sand-600">{w.name}</span>
+              <span className="font-serif italic text-sand-400 text-sm">{w.scientific_name}</span>
+            </label>
+          ))}
+        </div>
+        <div className="flex justify-end gap-3 mt-5">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 transition-colors border rounded-full border-sand-300 text-sand-600 hover:bg-sand-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2 font-semibold text-white transition-colors rounded-full bg-sand-400 hover:bg-sand-500 disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Per-dataset search field configuration: which Wildlife columns, custom
 // species-account Fields (by name), and image-metadata columns the search
 // bar indexes. Datasets without an entry here fall back to
@@ -177,6 +247,11 @@ const SEARCH_CONFIG = {
       "What does it eat?",
       "Where does it roost?"
     ],
+    imageFields: ["locations", "copyrights", "comments"]
+  },
+  raptors: {
+    baseFields: ["name", "scientific_name"],
+    speciesFields: ["Description", "Voice", "Diet", "Nesting", "Did you know?"],
     imageFields: ["locations", "copyrights", "comments"]
   }
 };
@@ -226,14 +301,48 @@ function loadFilterState(type) {
   }
 }
 
-export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", title, showLocationsMap = false }) {
+export function WildlifeDB({
+  type,
+  label,
+  heroImage,
+  heroPosition = "50% 50%",
+  title,
+  showLocationsMap = false,
+  useDisplayList = false,
+  moreView = false
+}) {
   const savedFilters = loadFilterState(type);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
   const [wildlife, setWildlife] = useState([]);
   const [openFamilies, setOpenFamilies] = useState(savedFilters?.openFamilies ?? new Set());
   const [selectedGenera, setSelectedGenera] = useState(savedFilters?.selectedGenera ?? new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [commonIds, setCommonIds] = useState(null); // null = not loaded yet (only used when useDisplayList)
+  const [showEditDisplayList, setShowEditDisplayList] = useState(false);
   const { admin } = useContext(AdminContext);
+
+  // Load the "common" species list when this dataset opts into the main/More split.
+  useEffect(() => {
+    if (!useDisplayList) return;
+    apiService
+      .getDisplayList(type)
+      .then(data => setCommonIds(new Set(data?.common_ids ?? [])))
+      .catch(() => setCommonIds(new Set()));
+  }, [type, useDisplayList]);
+
+  const saveDisplayList = async newCommonIds => {
+    await apiService.updateDisplayList(type, newCommonIds);
+    setCommonIds(new Set(newCommonIds));
+    setShowEditDisplayList(false);
+  };
+
+  // The subset of wildlife this particular view (main grid vs. "More" page)
+  // actually shows. Datasets without useDisplayList show everything, as before.
+  const visibleWildlife = useMemo(() => {
+    if (!useDisplayList) return wildlife;
+    if (commonIds === null) return []; // still loading the display list
+    return wildlife.filter(w => (moreView ? !commonIds.has(w.id) : commonIds.has(w.id)));
+  }, [wildlife, useDisplayList, moreView, commonIds]);
 
   // Persist filter state whenever it changes so it's there when the user comes back.
   useEffect(() => {
@@ -281,6 +390,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       }
     });
 
+    // Indexed from the full dataset, not just this view's subset, so search
+    // can find a species regardless of whether it's common or less common.
     for (const w of wildlife) {
       index.add({
         id: w.id,
@@ -294,7 +405,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     indexRef.current = index;
   }, [wildlife, type]);
 
-  // Build a map of family -> Set of genera from field_values.
+  // Build a map of family -> Set of genera from field_values, across the
+  // full dataset (see the FlexSearch index above for why).
   const familyMap = useMemo(() => {
     const map = new Map();
     for (const w of wildlife) {
@@ -350,15 +462,18 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   const hasFilters = selectedGenera.size > 0;
 
   // Apply FlexSearch and genus filters to produce the final result list.
-  // When the search box is empty we skip the index lookup and use the full list.
+  // When the search box is empty we show this view's normal subset (common
+  // species on the main page, less-common on the "More" page). Once there's
+  // a search term, it searches the *entire* dataset instead, so a species
+  // can be found regardless of which page it normally lives on.
   const filtered = useMemo(() => {
-    let base = wildlife;
+    let base = search.trim() ? wildlife : visibleWildlife;
 
     if (search.trim() && indexRef.current) {
       // Search across all three indexed fields and union the matching IDs.
       const results = indexRef.current.search(search.trim(), { limit: 1000, enrich: false });
       const matchedIds = new Set(results.flatMap(r => r.result));
-      base = wildlife.filter(w => matchedIds.has(w.id));
+      base = base.filter(w => matchedIds.has(w.id));
     }
 
     if (hasFilters) {
@@ -369,7 +484,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     }
 
     return [...base].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [search, wildlife, hasFilters, selectedGenera]);
+  }, [search, wildlife, visibleWildlife, hasFilters, selectedGenera]);
 
   // Persist the current result order so the species detail page can offer
   // next/previous navigation through this same filtered list.
@@ -448,6 +563,15 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
               ))}
             </aside>
 
+            {useDisplayList && !moreView && admin && (
+              <button
+                onClick={() => setShowEditDisplayList(true)}
+                className="font-serif italic text-sand-400 text-sm text-left hover:text-sand-600 transition-colors"
+              >
+                Edit display list
+              </button>
+            )}
+
             {showLocationsMap && <LocationsMap type={type} />}
           </div>
 
@@ -503,9 +627,29 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
                 No {type} found for "{search}"
               </p>
             )}
+
+            {useDisplayList && !moreView && (
+              <div className="mt-8 text-center">
+                <NavLink
+                  to={`/${type}/more`}
+                  className="font-serif italic text-sand-400 hover:text-sand-600 transition-colors"
+                >
+                  More
+                </NavLink>
+              </div>
+            )}
           </main>
         </div>
       </div>
+
+      {showEditDisplayList && (
+        <EditDisplayListModal
+          allWildlife={wildlife}
+          commonIds={commonIds ?? new Set()}
+          onSave={saveDisplayList}
+          onClose={() => setShowEditDisplayList(false)}
+        />
+      )}
 
       {/* Mobile Filters Modal */}
       <div
