@@ -27,8 +27,10 @@ export const NavBar = () => {
   const currentSite = sites.find(s => s.id === category) || sites[0];
   // otherSites are shown in the hover dropdown to switch between datasets.
   // Hidden sites (e.g. an unreleased dataset) are left out of this list but
-  // still resolve correctly when visited directly by URL.
-  const otherSites = sites.filter(s => s.id !== category && !s.hidden);
+  // still resolve correctly when visited directly by URL. A hidden site's
+  // own page also gets no switcher at all, so it doesn't offer a way out to
+  // the public datasets while it's still unannounced.
+  const otherSites = currentSite.hidden ? [] : sites.filter(s => s.id !== category && !s.hidden);
 
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);
@@ -59,18 +61,20 @@ export const NavBar = () => {
             >
               <img src={currentSite.logo} alt={currentSite.label} className="w-75 h-24.5 object-cover md:w-75 md:h-24.5 sm:w-45 sm:h-15"/>
 
-              <ChevronDown
-                size={24}
-                strokeWidth={1.75}
-                className={`text-sand-400 transition-all duration-300 -ml-2.5 md:block hidden ${
-                  isMenuOpen ? 'rotate-180' : ''
-                }`}
-              />
+              {otherSites.length > 0 && (
+                <ChevronDown
+                  size={24}
+                  strokeWidth={1.75}
+                  className={`text-sand-400 transition-all duration-300 -ml-2.5 md:block hidden ${
+                    isMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              )}
             </Link>
           </div>
 
           {/* Dropdown Menu - Desktop */}
-          {isMenuOpen && (
+          {isMenuOpen && otherSites.length > 0 && (
             <div className="absolute top-24.5 left-0 w-87.5 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 z-40 flex flex-col hidden md:flex">
               {otherSites.map((site) => (
                 <Link 
@@ -122,6 +126,7 @@ export const NavBar = () => {
         {isMobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden">
             {/* Mobile Site Switcher */}
+            {otherSites.length > 0 && (
             <div className="p-4 border-b border-gray-100">
               <div className="flex flex-col space-y-2">
                 {otherSites.map((site) => (
@@ -140,6 +145,7 @@ export const NavBar = () => {
                 ))}
               </div>
             </div>
+            )}
           </div>
         )}
       </nav>
