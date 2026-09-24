@@ -343,9 +343,12 @@ def _seed_family_field(conn):
 
 
 def _seed_site_content(conn):
-    """Seed a dataset's PageContent/GlossaryTerms tables with the shared
-    starting content the first time it's initialized. Each dataset then owns
-    an independent copy that an admin can edit separately."""
+    """Seed a dataset's PageContent table with the shared starting content
+    the first time it's initialized. Each dataset then owns an independent
+    copy that an admin can edit separately.
+
+    GlossaryTerms is deliberately not seeded here: a new dataset starts with
+    an empty glossary rather than inheriting another dataset's terms."""
     from app import content_defaults
 
     cursor = conn.cursor()
@@ -353,13 +356,6 @@ def _seed_site_content(conn):
         cursor.execute(
             "INSERT OR IGNORE INTO PageContent (page, content) VALUES (?, ?)",
             (page, content),
-        )
-
-    cursor.execute("SELECT COUNT(*) FROM GlossaryTerms")
-    if cursor.fetchone()[0] == 0:
-        cursor.executemany(
-            "INSERT INTO GlossaryTerms (term, description) VALUES (?, ?)",
-            content_defaults.DEFAULT_GLOSSARY,
         )
     conn.commit()
 
