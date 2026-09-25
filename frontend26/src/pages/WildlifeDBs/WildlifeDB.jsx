@@ -137,6 +137,73 @@ function FamilyFilter({
   );
 }
 
+const FLIGHT_ZONES = ["All", "Alpine", "Montane", "Foothills", "Plains"];
+
+function todayIso() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// FlightTimeFilter renders the "only show species expected on a date" toggle,
+// with date/zone inputs that appear once it's checked. Shared between the
+// desktop sidebar and the mobile filters modal.
+function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone }) {
+  return (
+    <div className="pt-3 mt-3 border-t border-sand-200">
+      <label className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer text-sand-600 hover:bg-sand-200 transition-colors select-none">
+        <input
+          type="checkbox"
+          className="accent-sand-400 w-3.5 h-3.5 shrink-0"
+          checked={enabled}
+          onChange={e => setEnabled(e.target.checked)}
+        />
+        <span className="font-serif text-sm">Expected on a date</span>
+      </label>
+
+      {enabled && (
+        <div className="ml-3.5 mt-2 pl-5 border-l border-sand-200 flex flex-col gap-2.5 pb-1">
+          <label className="flex flex-col gap-1">
+            <span className="font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-widest uppercase text-sand-300">
+              Date
+            </span>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-widest uppercase text-sand-300">
+              Life zone
+            </span>
+            <select
+              value={zone}
+              onChange={e => setZone(e.target.value)}
+              className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+            >
+              {FLIGHT_ZONES.map(z => (
+                <option key={z} value={z}>
+                  {z}
+                </option>
+              ))}
+            </select>
+          </label>
+          {date !== todayIso() && (
+            <button
+              onClick={() => setDate(todayIso())}
+              className="font-serif italic text-sand-400 text-xs text-left hover:text-sand-600 transition-colors"
+            >
+              Reset to today
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // EditDisplayListModal lets an admin choose which species count as "common"
 // (shown on the main grid) versus "less common" (shown on the "More" page).
 function EditDisplayListModal({ allWildlife, commonIds, onSave, onClose }) {
@@ -294,7 +361,10 @@ function loadFilterState(type) {
     return {
       search: parsed.search ?? "",
       selectedGenera: new Set(parsed.selectedGenera ?? []),
-      openFamilies: new Set(parsed.openFamilies ?? [])
+      openFamilies: new Set(parsed.openFamilies ?? []),
+      flightFilterEnabled: parsed.flightFilterEnabled ?? false,
+      flightDate: parsed.flightDate ?? todayIso(),
+      flightZone: parsed.flightZone ?? "All"
     };
   } catch {
     return null;
@@ -309,7 +379,9 @@ export function WildlifeDB({
   title,
   showLocationsMap = false,
   useDisplayList = false,
-  moreView = false
+  moreView = false,
+  extraLinks = [],
+  showFlightTimeFilter = false
 }) {
   const savedFilters = loadFilterState(type);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
@@ -319,7 +391,36 @@ export function WildlifeDB({
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [commonIds, setCommonIds] = useState(null); // null = not loaded yet (only used when useDisplayList)
   const [showEditDisplayList, setShowEditDisplayList] = useState(false);
+  const [flightFilterEnabled, setFlightFilterEnabled] = useState(savedFilters?.flightFilterEnabled ?? false);
+  const [flightDate, setFlightDate] = useState(savedFilters?.flightDate ?? todayIso());
+  const [flightZone, setFlightZone] = useState(savedFilters?.flightZone ?? "All");
+  const [expectedIds, setExpectedIds] = useState(null); // null = filter inactive/not loaded
   const { admin } = useContext(AdminContext);
+
+  // Load the set of expected wildlife_ids whenever the flight-time filter is
+  // enabled and its date/zone change. Species without a matching Wildlife
+  // record (no photo yet) can't be shown in this grid anyway, so they're
+  // dropped here — see the standalone Flight Calendar page for those.
+  useEffect(() => {
+    if (!showFlightTimeFilter || !flightFilterEnabled) {
+      setExpectedIds(null);
+      return;
+    }
+    let cancelled = false;
+    apiService
+      .getExpectedWildlife(type, flightDate, flightZone)
+      .then(data => {
+        if (cancelled) return;
+        const ids = new Set((data?.species ?? []).map(s => s.wildlife_id).filter(id => id != null));
+        setExpectedIds(ids);
+      })
+      .catch(() => {
+        if (!cancelled) setExpectedIds(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showFlightTimeFilter, flightFilterEnabled, flightDate, flightZone, type]);
 
   // Load the "common" species list when this dataset opts into the main/More split.
   useEffect(() => {
@@ -351,10 +452,13 @@ export function WildlifeDB({
       JSON.stringify({
         search,
         selectedGenera: [...selectedGenera],
-        openFamilies: [...openFamilies]
+        openFamilies: [...openFamilies],
+        flightFilterEnabled,
+        flightDate,
+        flightZone
       })
     );
-  }, [type, search, selectedGenera, openFamilies]);
+  }, [type, search, selectedGenera, openFamilies, flightFilterEnabled, flightDate, flightZone]);
 
   // FlexSearch document index — rebuilt whenever wildlife data changes.
   // We index three fields: name, scientific_name, and a flattened field_values string.
@@ -459,14 +563,14 @@ export function WildlifeDB({
     return "indeterminate";
   };
 
-  const hasFilters = selectedGenera.size > 0;
+  const hasFilters = selectedGenera.size > 0 || flightFilterEnabled;
 
-  // Apply FlexSearch and genus filters to produce the final result list.
-  // With no search term and no genus filter selected, we show this view's
-  // normal subset (common species on the main page, less-common on the
-  // "More" page). Once either is active, it operates over the *entire*
-  // dataset instead, so a species can be found/filtered regardless of which
-  // page it normally lives on.
+  // Apply FlexSearch, genus, and flight-time filters to produce the final
+  // result list. With no search term and no filter active, we show this
+  // view's normal subset (common species on the main page, less-common on
+  // the "More" page). Once any filter is active, it operates over the
+  // *entire* dataset instead, so a species can be found/filtered regardless
+  // of which page it normally lives on.
   const filtered = useMemo(() => {
     let base = (search.trim() || hasFilters) ? wildlife : visibleWildlife;
 
@@ -477,15 +581,19 @@ export function WildlifeDB({
       base = base.filter(w => matchedIds.has(w.id));
     }
 
-    if (hasFilters) {
+    if (selectedGenera.size > 0) {
       base = base.filter(w => {
         const genus = w.scientific_name ? w.scientific_name.split(" ")[0] : null;
         return !!genus && selectedGenera.has(genus);
       });
     }
 
+    if (flightFilterEnabled && expectedIds) {
+      base = base.filter(w => expectedIds.has(w.id));
+    }
+
     return [...base].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [search, wildlife, visibleWildlife, hasFilters, selectedGenera]);
+  }, [search, wildlife, visibleWildlife, hasFilters, selectedGenera, flightFilterEnabled, expectedIds]);
 
   // Persist the current result order so the species detail page can offer
   // next/previous navigation through this same filtered list.
@@ -528,6 +636,15 @@ export function WildlifeDB({
               {link.name}
             </NavLink>
           ))}
+          {extraLinks.map(link => (
+            <NavLink
+              key={link.name}
+              to={`/${type}/${link.path}`}
+              className="font-sans text-sm tracking-wide uppercase transition-colors text-sand-50 hover:text-sand-200"
+            >
+              {link.name}
+            </NavLink>
+          ))}
         </div>
       </section>
 
@@ -542,7 +659,10 @@ export function WildlifeDB({
                 </h5>
                 {hasFilters && (
                   <button
-                    onClick={() => setSelectedGenera(new Set())}
+                    onClick={() => {
+                      setSelectedGenera(new Set());
+                      setFlightFilterEnabled(false);
+                    }}
                     className="text-xs text-sand-400 hover:text-sand-600 transition-colors"
                   >
                     Clear all
@@ -562,6 +682,16 @@ export function WildlifeDB({
                   toggleGenus={toggleGenus}
                 />
               ))}
+              {showFlightTimeFilter && (
+                <FlightTimeFilter
+                  enabled={flightFilterEnabled}
+                  setEnabled={setFlightFilterEnabled}
+                  date={flightDate}
+                  setDate={setFlightDate}
+                  zone={flightZone}
+                  setZone={setFlightZone}
+                />
+              )}
             </aside>
 
             {useDisplayList && !moreView && admin && (
@@ -587,13 +717,18 @@ export function WildlifeDB({
                 <Filter size={18} />
                 Filters
                 {hasFilters && (
-                  <span className="bg-sand-400 text-white text-xs px-2 py-0.5 rounded-full">{selectedGenera.size}</span>
+                  <span className="bg-sand-400 text-white text-xs px-2 py-0.5 rounded-full">
+                    {selectedGenera.size + (flightFilterEnabled ? 1 : 0)}
+                  </span>
                 )}
               </button>
 
               {hasFilters && (
                 <button
-                  onClick={() => setSelectedGenera(new Set())}
+                  onClick={() => {
+                    setSelectedGenera(new Set());
+                    setFlightFilterEnabled(false);
+                  }}
                   className="text-sm transition-colors text-sand-400 hover:text-sand-600"
                 >
                   Clear all
@@ -700,13 +835,26 @@ export function WildlifeDB({
                     toggleGenus={toggleGenus}
                   />
                 ))}
+                {showFlightTimeFilter && (
+                  <FlightTimeFilter
+                    enabled={flightFilterEnabled}
+                    setEnabled={setFlightFilterEnabled}
+                    date={flightDate}
+                    setDate={setFlightDate}
+                    zone={flightZone}
+                    setZone={setFlightZone}
+                  />
+                )}
               </div>
             </div>
 
             <div className="p-4 border-t border-sand-200">
               <div className="flex gap-3">
                 <button
-                  onClick={() => setSelectedGenera(new Set())}
+                  onClick={() => {
+                    setSelectedGenera(new Set());
+                    setFlightFilterEnabled(false);
+                  }}
                   className="flex-1 px-4 py-2 transition-colors border rounded-lg border-sand-300 text-sand-600 hover:bg-sand-50"
                 >
                   Clear All

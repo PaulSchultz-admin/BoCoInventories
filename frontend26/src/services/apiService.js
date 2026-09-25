@@ -442,6 +442,21 @@ const apiService = {
     }
   },
 
+  // getExpectedWildlife returns the species expected to be flying/found on a
+  // given date, in a given life zone, based on the dataset's flight_times.csv.
+  // date defaults to today and zone to "Foothills" on the backend if omitted.
+  getExpectedWildlife: async (dataset = "butterflies", date = null, zone = null) => {
+    try {
+      const params = new URLSearchParams({ dataset });
+      if (date) params.append("date", date);
+      if (zone) params.append("zone", zone);
+      const response = await api.get(`/api/expected-wildlife/?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // getLocationPhotos returns the geotagged photos shown as pins on the inset map.
   getLocationPhotos: async (dataset = "butterflies") => {
     try {

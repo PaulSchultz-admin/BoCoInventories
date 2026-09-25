@@ -9,6 +9,8 @@ export function ButterflyDB() {
       heroImage="/butterfly-hero.png"
       heroPosition="25% 65%"
       title="Butterflies of the Colorado Front Range"
+      extraLinks={[{ name: "Flight Calendar", path: "flight-calendar" }]}
+      showFlightTimeFilter
     />
   );
 }

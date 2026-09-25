@@ -10,6 +10,7 @@ from app.routes.auth import auth_bp
 from app.routes.content import content_bp
 from app.routes.location_photos import location_photos_bp
 from app.routes.display_list import display_list_bp
+from app.routes.flight_times import flight_times_bp
 from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -152,5 +153,6 @@ def create_app(test_config=None):
     app.register_blueprint(content_bp)
     app.register_blueprint(location_photos_bp)
     app.register_blueprint(display_list_bp)
+    app.register_blueprint(flight_times_bp)
 
     return app

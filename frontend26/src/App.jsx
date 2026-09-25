@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import { Layout, WildlifeLayout, DynamicDBRouter, DynamicMoreDBRouter } from "./components/Layouts";
 
 import WildlifeDetails from "./pages/WildlifeDetails";
+import { FlightCalendar } from "./pages/FlightCalendar";
 import { Info } from "./pages/Info";
 import { About } from "./pages/About";
 import { Resources } from "./pages/Resources";
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
           {
             path: "glossary",
             element: <Glossary />
+          },
+          {
+            path: "flight-calendar",
+            element: <FlightCalendar />
           },
           {
             path: ":wildlifeId",
