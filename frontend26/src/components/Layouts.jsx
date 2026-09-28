@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import { Footer } from "./Footer";
 import { NavBar } from "./NavBar";
+import { sites } from "../data/sites";
 import { ButterflyDB } from "../pages/WildlifeDBs/ButterflyDB";
 import { DragonflyDB } from "../pages/WildlifeDBs/DragonflyDB";
 import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
@@ -9,7 +11,20 @@ import { BatDB } from "../pages/WildlifeDBs/BatDB";
 import { RaptorDB } from "../pages/WildlifeDBs/RaptorDB";
 import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 
+const DEFAULT_TITLE = "BCNA Wildlife Database";
+
 export const Layout = () => {
+  const { category } = useParams();
+  const currentSite = sites.find(s => s.id === category);
+
+  // A hideBcna site (see sites.js) also gets a browser-tab title with no
+  // BCNA mention, instead of the shared static one from index.html.
+  useEffect(() => {
+    document.title = currentSite?.hideBcna
+      ? `${currentSite.label} of Boulder County`
+      : DEFAULT_TITLE;
+  }, [currentSite]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <NavBar />

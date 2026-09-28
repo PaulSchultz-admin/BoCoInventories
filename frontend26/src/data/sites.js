@@ -2,6 +2,9 @@
 // per-dataset About/Resources/Glossary/Contact pages. A site with `hidden: true`
 // still resolves correctly on its own pages (self-lookups fall through to it by
 // id) but is left out of the switcher dropdown shown on other datasets' pages.
+// A site with `hideBcna: true` gets no BCNA branding (Footer logo/name/links,
+// hero "BCNA nature photo inventory" credit) on its own page — meant to be
+// temporary, so just remove the flag when it's ready to carry BCNA branding.
 export const sites = [
   {
     id: "butterflies",
@@ -52,6 +55,7 @@ export const sites = [
     heroImage: "/raptor-hero.JPG",
     label: "Raptors",
     hoverBg: "hover:bg-sky-50",
-    hidden: true
+    hidden: true,
+    hideBcna: true
   }
 ];

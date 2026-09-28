@@ -13,6 +13,7 @@ import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
 import { navLinks } from "../../components/NavBar";
 import { LocationsMap } from "../../components/LocationsMap";
+import { sites } from "../../data/sites";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
 function AddCard({ wildlifeType, label }) {
@@ -383,6 +384,7 @@ export function WildlifeDB({
   extraLinks = [],
   showFlightTimeFilter = false
 }) {
+  const hideBcna = sites.find(s => s.id === type)?.hideBcna ?? false;
   const savedFilters = loadFilterState(type);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
   const [wildlife, setWildlife] = useState([]);
@@ -619,9 +621,11 @@ export function WildlifeDB({
             <h2 className="font-[Cormorant_Garamond] italic text-5xl lg:text-7xl font-semibold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
               {title}
             </h2>
-            <p className="font-[playfair-display] ml-20 lg:ml-50 mt-2 italic text-gray-200">
-              BCNA nature photo inventory
-            </p>
+            {!hideBcna && (
+              <p className="font-[playfair-display] ml-20 lg:ml-50 mt-2 italic text-gray-200">
+                BCNA nature photo inventory
+              </p>
+            )}
           </div>
         </div>
 

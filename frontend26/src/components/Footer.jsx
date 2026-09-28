@@ -1,6 +1,8 @@
 import { useState, useContext } from "react";
+import { useParams } from "react-router-dom";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
+import { sites } from "../data/sites";
 
 const FacebookIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -19,40 +21,46 @@ const InstagramIcon = () => (
 export const Footer = () => {
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);
+  const { category } = useParams();
+  const hideBcna = sites.find(s => s.id === category)?.hideBcna ?? false;
 
   return (
     <footer className="w-full py-12 px-6 border-t text-sand-600 bg-sand-100 border-sand-200">
       <div className="max-w-[1100px] mx-auto">
         {/* Main Content Grid */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-10">
-          
+
           {/* Logo & Info Section */}
-          <div className="flex flex-col gap-4 min-w-[280px]">
-            <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="inline-block transition-opacity hover:opacity-80">
-              <img src="/bcna-logo.png" alt="BCNA Logo" className="h-24 w-auto" />
-            </a>
-            <div>
-              <p className="font-bold text-sand-800 tracking-wider text-sm mb-1 uppercase">
-                Boulder County Nature Association
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <a href="https://www.facebook.com/BoulderCountyNatureAssociation" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Facebook">
-                <FacebookIcon />
+          {!hideBcna && (
+            <div className="flex flex-col gap-4 min-w-[280px]">
+              <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="inline-block transition-opacity hover:opacity-80">
+                <img src="/bcna-logo.png" alt="BCNA Logo" className="h-24 w-auto" />
               </a>
-              <a href="https://www.instagram.com/bouldernatue" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Instagram">
-                <InstagramIcon />
-              </a>
+              <div>
+                <p className="font-bold text-sand-800 tracking-wider text-sm mb-1 uppercase">
+                  Boulder County Nature Association
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <a href="https://www.facebook.com/BoulderCountyNatureAssociation" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Facebook">
+                  <FacebookIcon />
+                </a>
+                <a href="https://www.instagram.com/bouldernatue" target="_blank" rel="noopener noreferrer" className="text-sand-400 hover:text-sand-700 transition-colors" aria-label="Instagram">
+                  <InstagramIcon />
+                </a>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Mission Statement */}
-          <div className="max-w-xs">
-            <h5 className="text-sand-400 text-xs font-bold tracking-[0.1em] uppercase mb-4">Our Mission</h5>
-            <p className="font-serif text-lg text-sand-700 leading-relaxed italic">
-              "To conserve resilient natural ecosystems in our region through science, education, and advocacy."
-            </p>
-          </div>
+          {!hideBcna && (
+            <div className="max-w-xs">
+              <h5 className="text-sand-400 text-xs font-bold tracking-[0.1em] uppercase mb-4">Our Mission</h5>
+              <p className="font-serif text-lg text-sand-700 leading-relaxed italic">
+                "To conserve resilient natural ecosystems in our region through science, education, and advocacy."
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Divider */}
@@ -61,12 +69,17 @@ export const Footer = () => {
         {/* Legal & Credits Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs tracking-wide text-sand-500 uppercase">
           <p>
-            © 2026{" "}
-            <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="hover:text-sand-800 transition-colors">
-              Boulder County Nature Association
-            </a>
+            © 2026
+            {!hideBcna && (
+              <>
+                {" "}
+                <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="hover:text-sand-800 transition-colors">
+                  Boulder County Nature Association
+                </a>
+              </>
+            )}
           </p>
-          
+
           <div className="flex items-center gap-6">
             <p>
               Site by{" "}
