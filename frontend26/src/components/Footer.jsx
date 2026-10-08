@@ -18,11 +18,13 @@ const InstagramIcon = () => (
   </svg>
 );
 
-export const Footer = () => {
+// hideBcna forces BCNA branding off (used by the home page); otherwise it
+// follows the current dataset's hideBcna flag in sites.js.
+export const Footer = ({ hideBcna: forceHideBcna = false }) => {
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);
   const { category } = useParams();
-  const hideBcna = sites.find(s => s.id === category)?.hideBcna ?? false;
+  const hideBcna = forceHideBcna || (sites.find(s => s.id === category)?.hideBcna ?? false);
 
   return (
     <footer className="w-full py-12 px-6 border-t text-sand-600 bg-sand-100 border-sand-200">

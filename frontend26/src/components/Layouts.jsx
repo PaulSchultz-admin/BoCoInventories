@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams, Link, NavLink, useLocation } from "react-router-dom";
 import { Footer } from "./Footer";
 import { NavBar } from "./NavBar";
 import { sites } from "../data/sites";
@@ -32,6 +32,35 @@ export const Layout = () => {
         <Outlet />
       </main>
       <Footer />
+    </div>
+  );
+};
+
+// HomeLayout wraps the site landing page and its own About/Contact pages.
+// It has no NavBar: About and Contact sit in the hero's upper-right corner
+// instead (plus a Home link when not already on the home page).
+export const HomeLayout = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    document.title = "Boulder County Inventories";
+  }, []);
+
+  const linkClass = "font-sans text-sm tracking-wide uppercase transition-colors text-sand-50 hover:text-sand-200 text-shadow-[1px_1px_4px_rgba(0,0,0,0.9)]";
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <main className="relative flex-1">
+        <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-[4%] py-5">
+          {pathname !== "/" ? <Link to="/" className={linkClass}>Home</Link> : <span />}
+          <div className="flex gap-8">
+            <NavLink to="/about" className={linkClass}>About</NavLink>
+            <NavLink to="/contact" className={linkClass}>Contact</NavLink>
+          </div>
+        </nav>
+        <Outlet />
+      </main>
+      <Footer hideBcna />
     </div>
   );
 };

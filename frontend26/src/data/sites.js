@@ -1,5 +1,5 @@
 // sites defines the dataset home pages shared across NavBar, Footer, and the
-// per-dataset About/Resources/Glossary/Contact pages. A site with `hidden: true`
+// per-dataset About/Resources/Glossary pages. A site with `hidden: true`
 // still resolves correctly on its own pages (self-lookups fall through to it by
 // id) but is left out of the switcher dropdown shown on other datasets' pages.
 // A site with `hideBcna: true` gets no BCNA branding (Footer logo/name/links,
@@ -12,7 +12,8 @@ export const sites = [
     logo: "/butterfly-logo.png",
     heroImage: "/butterfly-hero.png",
     label: "Butterflies",
-    hoverBg: "hover:bg-[#e2f2e7]"
+    hoverBg: "hover:bg-[#e2f2e7]",
+    hideBcna: true
   },
   {
     id: "dragonflies",
@@ -20,7 +21,8 @@ export const sites = [
     logo: "/dragonfly-logo.png",
     heroImage: "/dragonfly-hero.JPG",
     label: "Dragonflies",
-    hoverBg: "hover:bg-blue-50"
+    hoverBg: "hover:bg-blue-50",
+    hideBcna: true
   },
   {
     id: "wildflowers",
@@ -28,7 +30,8 @@ export const sites = [
     logo: "/wildflower-logo.png",
     heroImage: "/wildflower-hero.jpg",
     label: "Wildflowers",
-    hoverBg: "hover:bg-orange-50"
+    hoverBg: "hover:bg-orange-50",
+    hideBcna: true
   },
   {
     id: "lichens",
@@ -37,7 +40,7 @@ export const sites = [
     heroImage: "/lichen-hero.jpg",
     label: "Lichens",
     hoverBg: "hover:bg-teal-50",
-    hidden: true
+    hideBcna: true
   },
   {
     id: "bats",
@@ -46,7 +49,8 @@ export const sites = [
     heroImage: "/bat-hero.jpg",
     label: "Bats",
     hoverBg: "hover:bg-slate-100",
-    hidden: true
+    hidden: true,
+    hideBcna: true
   },
   {
     id: "raptors",
@@ -55,7 +59,6 @@ export const sites = [
     heroImage: "/raptor-hero.JPG",
     label: "Raptors",
     hoverBg: "hover:bg-sky-50",
-    hidden: true,
     hideBcna: true
   }
 ];

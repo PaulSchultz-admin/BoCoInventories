@@ -4,7 +4,7 @@
  */
 import { useParams, Link, NavLink } from "react-router-dom";
 import { useState, useContext } from "react";
-import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, House, Menu, X } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
 import { sites } from "../data/sites";
@@ -16,7 +16,6 @@ export const navLinks = [
   { name: "Resources", path: "resources" },
   { name: "Glossary", path: "glossary" },
   { name: "About", path: "about" },
-  { name: "Contact", path: "contact" },
 ];
 
 export const NavBar = () => {
@@ -101,6 +100,14 @@ export const NavBar = () => {
       
         {/* Right side - Desktop Navigation */}
         <div className="hidden md:flex items-center gap-9 px-3">
+          <Link
+            to="/"
+            aria-label="Home"
+            title="Boulder County Inventories home"
+            className="text-sand-400 transition-colors duration-300 hover:text-sand-500"
+          >
+            <House size={22} strokeWidth={1.75} />
+          </Link>
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
@@ -125,6 +132,13 @@ export const NavBar = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden">
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-3 text-sand-500 border-b border-gray-100"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <House size={20} strokeWidth={1.75} /> Home
+            </Link>
             {/* Mobile Site Switcher */}
             {otherSites.length > 0 && (
             <div className="p-4 border-b border-gray-100">
