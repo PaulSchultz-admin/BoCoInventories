@@ -418,7 +418,7 @@ const apiService = {
 
   // getDisplayList returns the dataset's list of "common" wildlife IDs (shown
   // on the main grid; everything else shows on the "More" page). Datasets
-  // without the feature configured yet return an empty list.
+  // without a list configured yet return null (every species is common).
   getDisplayList: async (dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/display-list/?dataset=${dataset}`);

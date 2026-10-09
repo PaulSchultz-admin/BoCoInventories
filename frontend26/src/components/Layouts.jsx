@@ -9,6 +9,7 @@ import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
 import { LichenDB } from "../pages/WildlifeDBs/LichenDB";
 import { BatDB } from "../pages/WildlifeDBs/BatDB";
 import { RaptorDB } from "../pages/WildlifeDBs/RaptorDB";
+import { ButterflyMoreDB } from "../pages/WildlifeDBs/ButterflyMoreDB";
 import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 
 const DEFAULT_TITLE = "BCNA Wildlife Database";
@@ -86,11 +87,12 @@ export const DynamicDBRouter = () => {
 
 // DynamicMoreDBRouter renders a category's "More" page — the less-common
 // species grid linked from the main page's "More" link. Only categories that
-// opt into the display-list split (currently just raptors) have one.
+// opt into the display-list split (butterflies and raptors) have one.
 export const DynamicMoreDBRouter = () => {
   const { category } = useParams();
 
   const components = {
+    butterflies: <ButterflyMoreDB />,
     raptors: <RaptorMoreDB />
   };
 

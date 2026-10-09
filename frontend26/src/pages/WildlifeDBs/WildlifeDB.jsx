@@ -372,6 +372,9 @@ function loadFilterState(type) {
   }
 }
 
+// Sentinel for a dataset that uses the display-list split but hasn't saved a list yet.
+const ALL_COMMON = "all";
+
 export function WildlifeDB({
   type,
   label,
@@ -391,7 +394,7 @@ export function WildlifeDB({
   const [openFamilies, setOpenFamilies] = useState(savedFilters?.openFamilies ?? new Set());
   const [selectedGenera, setSelectedGenera] = useState(savedFilters?.selectedGenera ?? new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [commonIds, setCommonIds] = useState(null); // null = not loaded yet (only used when useDisplayList)
+  const [commonIds, setCommonIds] = useState(null); // null = not loaded yet, ALL_COMMON = no list configured (only used when useDisplayList)
   const [showEditDisplayList, setShowEditDisplayList] = useState(false);
   const [flightFilterEnabled, setFlightFilterEnabled] = useState(savedFilters?.flightFilterEnabled ?? false);
   const [flightDate, setFlightDate] = useState(savedFilters?.flightDate ?? todayIso());
@@ -429,7 +432,7 @@ export function WildlifeDB({
     if (!useDisplayList) return;
     apiService
       .getDisplayList(type)
-      .then(data => setCommonIds(new Set(data?.common_ids ?? [])))
+      .then(data => setCommonIds(data?.common_ids == null ? ALL_COMMON : new Set(data.common_ids)))
       .catch(() => setCommonIds(new Set()));
   }, [type, useDisplayList]);
 
@@ -439,13 +442,20 @@ export function WildlifeDB({
     setShowEditDisplayList(false);
   };
 
+  // A dataset that opts into the split but has no list saved yet treats every
+  // species as common, so its main page looks unchanged until an admin edits it.
+  const effectiveCommonIds = useMemo(
+    () => (commonIds === ALL_COMMON ? new Set(wildlife.map(w => w.id)) : commonIds),
+    [commonIds, wildlife]
+  );
+
   // The subset of wildlife this particular view (main grid vs. "More" page)
   // actually shows. Datasets without useDisplayList show everything, as before.
   const visibleWildlife = useMemo(() => {
     if (!useDisplayList) return wildlife;
-    if (commonIds === null) return []; // still loading the display list
-    return wildlife.filter(w => (moreView ? !commonIds.has(w.id) : commonIds.has(w.id)));
-  }, [wildlife, useDisplayList, moreView, commonIds]);
+    if (effectiveCommonIds === null) return []; // still loading the display list
+    return wildlife.filter(w => (moreView ? !effectiveCommonIds.has(w.id) : effectiveCommonIds.has(w.id)));
+  }, [wildlife, useDisplayList, moreView, effectiveCommonIds]);
 
   // Persist filter state whenever it changes so it's there when the user comes back.
   useEffect(() => {
@@ -796,7 +806,7 @@ export function WildlifeDB({
       {showEditDisplayList && (
         <EditDisplayListModal
           allWildlife={wildlife}
-          commonIds={commonIds ?? new Set()}
+          commonIds={effectiveCommonIds ?? new Set()}
           onSave={saveDisplayList}
           onClose={() => setShowEditDisplayList(false)}
         />

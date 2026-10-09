@@ -72,7 +72,7 @@ def get_display_list():
     Retrieves the dataset's list of "common" wildlife IDs (shown on the main
     grid). Species not in this list are considered less common and are shown
     on the "More" page instead. A dataset with no display list configured yet
-    returns an empty list.
+    returns null, meaning every species counts as common.
 
     Example request:
     GET /api/display-list/?dataset=raptors
@@ -83,7 +83,7 @@ def get_display_list():
     }
     """
     common_ids = read_common_ids()
-    return jsonify({"common_ids": common_ids or []}), 200
+    return jsonify({"common_ids": common_ids}), 200
 
 
 @display_list_bp.route("/api/display-list/", methods=["PUT"])
