@@ -1,8 +1,10 @@
 /**
  * FlightCalendar shows a grid of species expected to be seen on a chosen date
  * (default today), in a chosen life zone (default All), based on the
- * dataset's flight_times.csv. Currently only the butterflies dataset has that
- * file; other datasets show a friendly "no data yet" message.
+ * dataset's flight_times.csv. Datasets whose flight times aren't broken out by
+ * life zone (the API reports zoned: false) get no zone picker, and each card
+ * shows the species' flight period instead. Datasets without the file show a
+ * friendly "no data yet" message.
  */
 import { useState, useEffect } from "react";
 import { useParams, NavLink } from "react-router-dom";
@@ -18,7 +20,7 @@ function todayIso() {
 
 // SpeciesCard mirrors WildlifeDB's card styling. Species without a matching
 // Wildlife record (wildlifeId is null) render as a plain, non-clickable card.
-function SpeciesCard({ dataset, name, scientificName, wildlifeId, thumbnailId, zones, showZones }) {
+function SpeciesCard({ dataset, name, scientificName, wildlifeId, thumbnailId, zones, showZones, flightPeriod }) {
   const content = (
     <>
       <div className="overflow-hidden aspect-square bg-sand-100">
@@ -42,6 +44,11 @@ function SpeciesCard({ dataset, name, scientificName, wildlifeId, thumbnailId, z
         {showZones && zones?.length > 0 && (
           <p className="mt-1 font-['Montserrat',sans-serif] text-[10px] uppercase tracking-wide text-sand-400 truncate">
             {zones.join(", ")}
+          </p>
+        )}
+        {flightPeriod && (
+          <p className="mt-1 font-['Montserrat',sans-serif] text-[10px] uppercase tracking-wide text-sand-400 truncate">
+            {flightPeriod}
           </p>
         )}
       </div>
@@ -90,6 +97,11 @@ export function FlightCalendar() {
     };
   }, [category, date, zone]);
 
+  // Until the first response arrives we don't know whether this dataset has
+  // life zones, so the zone picker stays hidden rather than flickering.
+  const zoned = result?.zoned === true;
+  const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
   const grouped = new Map();
   for (const s of result?.species ?? []) {
     if (!grouped.has(s.family)) grouped.set(s.family, []);
@@ -110,7 +122,7 @@ export function FlightCalendar() {
           Flight Calendar
         </h1>
         <p className="mb-6 font-serif text-sand-400">
-          See which species are expected on a given date, at a given elevation.
+          See which species are expected on a given date{zoned ? ", at a given elevation" : ""}.
         </p>
 
         <div className="flex flex-wrap items-end gap-4 p-4 mb-8 border rounded bg-sand-100 border-sand-200">
@@ -125,22 +137,24 @@ export function FlightCalendar() {
               className="px-3 py-2 font-serif bg-white border rounded outline-none border-sand-200 focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="font-['Montserrat',sans-serif] text-xs uppercase tracking-widest text-sand-400">
-              Life zone
-            </span>
-            <select
-              value={zone}
-              onChange={e => setZone(e.target.value)}
-              className="px-3 py-2 font-serif bg-white border rounded outline-none border-sand-200 focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
-            >
-              {ZONES.map(z => (
-                <option key={z} value={z}>
-                  {z}
-                </option>
-              ))}
-            </select>
-          </label>
+          {zoned && (
+            <label className="flex flex-col gap-1">
+              <span className="font-['Montserrat',sans-serif] text-xs uppercase tracking-widest text-sand-400">
+                Life zone
+              </span>
+              <select
+                value={zone}
+                onChange={e => setZone(e.target.value)}
+                className="px-3 py-2 font-serif bg-white border rounded outline-none border-sand-200 focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+              >
+                {ZONES.map(z => (
+                  <option key={z} value={z}>
+                    {z}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             onClick={() => setDate(todayIso())}
             className="pb-2 text-sm italic transition-colors font-serif text-sand-400 hover:text-sand-600"
@@ -155,9 +169,13 @@ export function FlightCalendar() {
         {!loading && !error && result && (
           <>
             <p className="mb-6 font-serif text-sand-500">
-              {result.species.length === 0
-                ? `No species are expected in the ${result.zone} zone in ${result.month}.`
-                : `${result.species.length} species expected in the ${result.zone} zone in ${result.month}.`}
+              {!zoned
+                ? result.species.length === 0
+                  ? `No species are expected on ${dateLabel}.`
+                  : `${result.species.length} species expected on ${dateLabel}.`
+                : result.species.length === 0
+                  ? `No species are expected in the ${result.zone} zone in ${result.month}.`
+                  : `${result.species.length} species expected in the ${result.zone} zone in ${result.month}.`}
             </p>
 
             {[...grouped.entries()].map(([family, list]) => (
@@ -176,6 +194,7 @@ export function FlightCalendar() {
                       thumbnailId={s.thumbnail_id}
                       zones={s.zones}
                       showZones={zone === "All"}
+                      flightPeriod={s.flight_period}
                     />
                   ))}
                 </div>

@@ -9,6 +9,7 @@ import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
 import { LichenDB } from "../pages/WildlifeDBs/LichenDB";
 import { BatDB } from "../pages/WildlifeDBs/BatDB";
 import { RaptorDB } from "../pages/WildlifeDBs/RaptorDB";
+import { DamselflyDB } from "../pages/WildlifeDBs/DamselflyDB";
 import { ButterflyMoreDB } from "../pages/WildlifeDBs/ButterflyMoreDB";
 import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 
@@ -87,12 +88,14 @@ export const DynamicDBRouter = () => {
 
 // DynamicMoreDBRouter renders a category's "More" page — the less-common
 // species grid linked from the main page's "More" link. Only categories that
-// opt into the display-list split (butterflies and raptors) have one.
+// opt into a split have one: a display list (butterflies, raptors) or a
+// family split (dragonflies, whose "More" page is Damselflies).
 export const DynamicMoreDBRouter = () => {
   const { category } = useParams();
 
   const components = {
     butterflies: <ButterflyMoreDB />,
+    dragonflies: <DamselflyDB />,
     raptors: <RaptorMoreDB />
   };
 

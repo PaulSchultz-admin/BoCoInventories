@@ -148,8 +148,9 @@ function todayIso() {
 
 // FlightTimeFilter renders the "only show species expected on a date" toggle,
 // with date/zone inputs that appear once it's checked. Shared between the
-// desktop sidebar and the mobile filters modal.
-function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone }) {
+// desktop sidebar and the mobile filters modal. Datasets whose flight times
+// aren't broken out by life zone (showZone false) get only the date input.
+function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, showZone = true }) {
   return (
     <div className="pt-3 mt-3 border-t border-sand-200">
       <label className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer text-sand-600 hover:bg-sand-200 transition-colors select-none">
@@ -175,22 +176,24 @@ function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone })
               className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-widest uppercase text-sand-300">
-              Life zone
-            </span>
-            <select
-              value={zone}
-              onChange={e => setZone(e.target.value)}
-              className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
-            >
-              {FLIGHT_ZONES.map(z => (
-                <option key={z} value={z}>
-                  {z}
-                </option>
-              ))}
-            </select>
-          </label>
+          {showZone && (
+            <label className="flex flex-col gap-1">
+              <span className="font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-widest uppercase text-sand-300">
+                Life zone
+              </span>
+              <select
+                value={zone}
+                onChange={e => setZone(e.target.value)}
+                className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+              >
+                {FLIGHT_ZONES.map(z => (
+                  <option key={z} value={z}>
+                    {z}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {date !== todayIso() && (
             <button
               onClick={() => setDate(todayIso())}
@@ -384,11 +387,21 @@ export function WildlifeDB({
   showLocationsMap = false,
   useDisplayList = false,
   moreView = false,
+  moreFamilies = null,
+  moreLabel = "More",
+  backLabel = "Back",
   extraLinks = [],
-  showFlightTimeFilter = false
+  showFlightTimeFilter = false,
+  flightTimeZones = true
 }) {
   const hideBcna = sites.find(s => s.id === type)?.hideBcna ?? false;
-  const savedFilters = loadFilterState(type);
+  // A family split (moreFamilies) divides the dataset into two separate
+  // groups, e.g. dragonflies vs. damselflies, rather than common vs. less
+  // common. Each page then keeps its own filters and search stays on it.
+  const familySplit = Array.isArray(moreFamilies) && moreFamilies.length > 0;
+  const hasMorePage = useDisplayList || familySplit;
+  const filterKey = familySplit && moreView ? `${type}:more` : type;
+  const savedFilters = loadFilterState(filterKey);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
   const [wildlife, setWildlife] = useState([]);
   const [openFamilies, setOpenFamilies] = useState(savedFilters?.openFamilies ?? new Set());
@@ -450,17 +463,24 @@ export function WildlifeDB({
   );
 
   // The subset of wildlife this particular view (main grid vs. "More" page)
-  // actually shows. Datasets without useDisplayList show everything, as before.
+  // actually shows. Datasets without a "More" page show everything, as before.
   const visibleWildlife = useMemo(() => {
+    if (familySplit) {
+      return wildlife.filter(w => {
+        const family = (w.field_values || []).find(fv => fv.name.toLowerCase() === "family")?.value ?? "";
+        const inMoreFamilies = moreFamilies.some(f => family.startsWith(f));
+        return moreView ? inMoreFamilies : !inMoreFamilies;
+      });
+    }
     if (!useDisplayList) return wildlife;
     if (effectiveCommonIds === null) return []; // still loading the display list
     return wildlife.filter(w => (moreView ? !effectiveCommonIds.has(w.id) : effectiveCommonIds.has(w.id)));
-  }, [wildlife, useDisplayList, moreView, effectiveCommonIds]);
+  }, [wildlife, familySplit, moreFamilies, useDisplayList, moreView, effectiveCommonIds]);
 
   // Persist filter state whenever it changes so it's there when the user comes back.
   useEffect(() => {
     sessionStorage.setItem(
-      FILTER_STORAGE_PREFIX + type,
+      FILTER_STORAGE_PREFIX + filterKey,
       JSON.stringify({
         search,
         selectedGenera: [...selectedGenera],
@@ -470,7 +490,7 @@ export function WildlifeDB({
         flightZone
       })
     );
-  }, [type, search, selectedGenera, openFamilies, flightFilterEnabled, flightDate, flightZone]);
+  }, [filterKey, search, selectedGenera, openFamilies, flightFilterEnabled, flightDate, flightZone]);
 
   // FlexSearch document index — rebuilt whenever wildlife data changes.
   // We index three fields: name, scientific_name, and a flattened field_values string.
@@ -522,10 +542,11 @@ export function WildlifeDB({
   }, [wildlife, type]);
 
   // Build a map of family -> Set of genera from field_values, across the
-  // full dataset (see the FlexSearch index above for why).
+  // full dataset (see the FlexSearch index above for why) — except with a
+  // family split, where each page only offers its own families.
   const familyMap = useMemo(() => {
     const map = new Map();
-    for (const w of wildlife) {
+    for (const w of familySplit ? visibleWildlife : wildlife) {
       const familyField = (w.field_values || []).find(fv => fv.name.toLowerCase() === "family");
       const familyName = familyField ? familyField.value : null;
       if (!familyName) continue;
@@ -534,7 +555,7 @@ export function WildlifeDB({
       if (genus) map.get(familyName).add(genus);
     }
     return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
-  }, [wildlife]);
+  }, [wildlife, familySplit, visibleWildlife]);
 
   // Drop any selected genera that no longer exist in the current data (e.g.
   // stale sessionStorage from before the dataset was populated), so a phantom
@@ -582,9 +603,10 @@ export function WildlifeDB({
   // view's normal subset (common species on the main page, less-common on
   // the "More" page). Once any filter is active, it operates over the
   // *entire* dataset instead, so a species can be found/filtered regardless
-  // of which page it normally lives on.
+  // of which page it normally lives on. A family split always stays on its
+  // own page's species.
   const filtered = useMemo(() => {
-    let base = (search.trim() || hasFilters) ? wildlife : visibleWildlife;
+    let base = (search.trim() || hasFilters) && !familySplit ? wildlife : visibleWildlife;
 
     if (search.trim() && indexRef.current) {
       // Search across all three indexed fields and union the matching IDs.
@@ -605,7 +627,7 @@ export function WildlifeDB({
     }
 
     return [...base].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [search, wildlife, visibleWildlife, hasFilters, selectedGenera, flightFilterEnabled, expectedIds]);
+  }, [search, wildlife, visibleWildlife, hasFilters, familySplit, selectedGenera, flightFilterEnabled, expectedIds]);
 
   // Persist the current result order so the species detail page can offer
   // next/previous navigation through this same filtered list.
@@ -704,6 +726,7 @@ export function WildlifeDB({
                   setDate={setFlightDate}
                   zone={flightZone}
                   setZone={setFlightZone}
+                  showZone={flightTimeZones}
                 />
               )}
             </aside>
@@ -754,7 +777,9 @@ export function WildlifeDB({
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder={`Search ${wildlife.length.toLocaleString()} ${type}…`}
+              placeholder={`Search ${(familySplit ? visibleWildlife : wildlife).length.toLocaleString()} ${
+                familySplit && moreView ? moreLabel.toLowerCase() : type
+              }…`}
               className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
 
@@ -778,24 +803,24 @@ export function WildlifeDB({
               </p>
             )}
 
-            {useDisplayList && !moreView && (
+            {hasMorePage && !moreView && (
               <div className="mt-8 text-center">
                 <NavLink
                   to={`/${type}/more`}
                   className="font-serif italic text-sand-400 hover:text-sand-600 transition-colors"
                 >
-                  More
+                  {moreLabel}
                 </NavLink>
               </div>
             )}
 
-            {useDisplayList && moreView && (
+            {hasMorePage && moreView && (
               <div className="mt-8 text-center">
                 <NavLink
                   to={`/${type}`}
                   className="font-serif italic text-sand-400 hover:text-sand-600 transition-colors"
                 >
-                  Back
+                  {backLabel}
                 </NavLink>
               </div>
             )}
@@ -857,6 +882,7 @@ export function WildlifeDB({
                     setDate={setFlightDate}
                     zone={flightZone}
                     setZone={setFlightZone}
+                    showZone={flightTimeZones}
                   />
                 )}
               </div>

@@ -1,5 +1,6 @@
 // DragonflyDB.jsx
 import { WildlifeDB } from "./WildlifeDB";
+import { DAMSELFLY_FAMILIES } from "../../data/damselflyFamilies";
 
 export function DragonflyDB() {
   return (
@@ -9,6 +10,11 @@ export function DragonflyDB() {
       heroImage="/dragonfly-hero.JPG"
       heroPosition="0% 50%"
       title="Dragonflies of the Colorado Front Range"
+      extraLinks={[{ name: "Flight Calendar", path: "flight-calendar" }]}
+      showFlightTimeFilter
+      flightTimeZones={false}
+      moreFamilies={DAMSELFLY_FAMILIES}
+      moreLabel="Damselflies"
     />
   );
 }
