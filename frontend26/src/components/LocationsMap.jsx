@@ -1,5 +1,6 @@
 /**
- * Inset map shown in the wildlife database sidebar, below the filter box.
+ * Inset map shown in the wildlife database sidebar, below the filter box (or,
+ * on narrow screens where the sidebar is hidden, above the species grid).
  * Plots one pin per LocationPhotos row for the dataset — standalone geotagged
  * photos (e.g. a boulder covered in lichen), each with a comment. These are
  * unrelated to species Images; the location comes from the photo's own EXIF
@@ -7,7 +8,7 @@
  * in the fullscreen viewer.
  */
 import { useContext, useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -32,6 +33,23 @@ const BOULDER_COUNTY_BOUNDS = [
   [39.8794, -105.6871],
   [40.2614, -105.1785]
 ];
+
+// FitOnResize keeps the map in step with its box. Leaflet only measures its
+// container when it's created, so a map that starts out at the wrong size
+// (e.g. created while hidden, or before an iPad rotates) would otherwise
+// show only a few tiles, so this refits Boulder County whenever the box resizes.
+function FitOnResize() {
+  const map = useMap();
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+      map.fitBounds(BOULDER_COUNTY_BOUNDS, { padding: [0, 0] });
+    });
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
 
 // LocationPhotoModal shows a location photo full-size over a dark backdrop,
 // matching the species-photo fullscreen viewer's look (WildlifeDetails.jsx's
@@ -150,6 +168,7 @@ export function LocationsMap({ type }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <FitOnResize />
           {photos.map(photo => (
             <Marker
               key={photo.id}

@@ -13,6 +13,7 @@ import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
 import { navLinks } from "../../components/NavBar";
 import { LocationsMap } from "../../components/LocationsMap";
+import { useMediaQuery } from "../../utils/useMediaQuery";
 import { sites } from "../../data/sites";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
@@ -399,7 +400,6 @@ export function WildlifeDB({
   // groups, e.g. dragonflies vs. damselflies, rather than common vs. less
   // common. Each page then keeps its own filters and search stays on it.
   const familySplit = Array.isArray(moreFamilies) && moreFamilies.length > 0;
-  const hasMorePage = useDisplayList || familySplit;
   const filterKey = familySplit && moreView ? `${type}:more` : type;
   const savedFilters = loadFilterState(filterKey);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
@@ -414,6 +414,8 @@ export function WildlifeDB({
   const [flightZone, setFlightZone] = useState(savedFilters?.flightZone ?? "All");
   const [expectedIds, setExpectedIds] = useState(null); // null = filter inactive/not loaded
   const { admin } = useContext(AdminContext);
+  // Matches Tailwind's md breakpoint, where the desktop sidebar appears.
+  const isDesktop = useMediaQuery("(min-width: 48rem)");
 
   // Load the set of expected wildlife_ids whenever the flight-time filter is
   // enabled and its date/zone change. Species without a matching Wildlife
@@ -731,6 +733,17 @@ export function WildlifeDB({
               )}
             </aside>
 
+            {/* A family split's link to the other page (e.g. Damselflies)
+                sits here on desktop; on mobile it's next to the Filters button. */}
+            {familySplit && (
+              <NavLink
+                to={moreView ? `/${type}` : `/${type}/more`}
+                className="font-serif italic text-sand-400 text-sm text-left hover:text-sand-600 transition-colors"
+              >
+                {moreView ? backLabel : moreLabel}
+              </NavLink>
+            )}
+
             {useDisplayList && !moreView && admin && (
               <button
                 onClick={() => setShowEditDisplayList(true)}
@@ -740,7 +753,7 @@ export function WildlifeDB({
               </button>
             )}
 
-            {showLocationsMap && <LocationsMap type={type} />}
+            {showLocationsMap && isDesktop && <LocationsMap type={type} />}
           </div>
 
           {/* Main content */}
@@ -760,17 +773,27 @@ export function WildlifeDB({
                 )}
               </button>
 
-              {hasFilters && (
-                <button
-                  onClick={() => {
-                    setSelectedGenera(new Set());
-                    setFlightFilterEnabled(false);
-                  }}
-                  className="text-sm transition-colors text-sand-400 hover:text-sand-600"
-                >
-                  Clear all
-                </button>
-              )}
+              <div className="flex items-center gap-4">
+                {hasFilters && (
+                  <button
+                    onClick={() => {
+                      setSelectedGenera(new Set());
+                      setFlightFilterEnabled(false);
+                    }}
+                    className="text-sm transition-colors text-sand-400 hover:text-sand-600"
+                  >
+                    Clear all
+                  </button>
+                )}
+                {familySplit && (
+                  <NavLink
+                    to={moreView ? `/${type}` : `/${type}/more`}
+                    className="font-serif italic transition-colors text-sand-400 hover:text-sand-600"
+                  >
+                    {moreView ? backLabel : moreLabel}
+                  </NavLink>
+                )}
+              </div>
             </div>
 
             <input
@@ -782,6 +805,12 @@ export function WildlifeDB({
               }…`}
               className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
+
+            {showLocationsMap && !isDesktop && (
+              <div className="mt-5">
+                <LocationsMap type={type} />
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-5 mt-5">
               {admin && <AddCard wildlifeType={type} label={label} />}
@@ -803,7 +832,7 @@ export function WildlifeDB({
               </p>
             )}
 
-            {hasMorePage && !moreView && (
+            {useDisplayList && !moreView && (
               <div className="mt-8 text-center">
                 <NavLink
                   to={`/${type}/more`}
@@ -814,7 +843,7 @@ export function WildlifeDB({
               </div>
             )}
 
-            {hasMorePage && moreView && (
+            {useDisplayList && moreView && (
               <div className="mt-8 text-center">
                 <NavLink
                   to={`/${type}`}
