@@ -19,6 +19,7 @@ Routes include:
     - POST /api/add-image/: Upload new image to wildlife entry
     - PUT /api/replace-image/<id>: Replace existing image file
     - PUT /api/set-thumbnail: Set thumbnail for wildlife display
+    - POST /api/reorder-images/: Save the display order of a wildlife entry's photos
     - DELETE /api/delete_image/: Delete image and associated file
 """
 from flask import Blueprint, request, jsonify, send_from_directory
@@ -359,8 +360,12 @@ def get_images_by_wildlife_id(wildlife_id):
     """
     logger.debug(f"get_images_by_wildlife_id: {wildlife_id}")
     try:
+        conn = db_helpers.get_connection()
+        db_helpers.ensure_images_sort_order(conn)
+        conn.close()
+        # Photos never explicitly ordered (sort_order NULL) come last, by id.
         images = db_helpers.select_multiple(
-            "SELECT id, image_path, copyright, date_taken, location_taken, comment, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
+            "SELECT id, image_path, copyright, date_taken, location_taken, comment, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ? ORDER BY sort_order IS NULL, sort_order, id",
             [wildlife_id],
         )
         for image in images:
@@ -370,6 +375,49 @@ def get_images_by_wildlife_id(wildlife_id):
     except Exception as e:
         logger.warning(f"Error in get_images_by_wildlife_id: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@images_bp.route("/api/reorder-images/", methods=["POST"])
+def reorder_images():
+    """
+    Saves the display order of a wildlife entry's photos.
+    Requires 'wildlife_id' and repeated 'image_ids[]' in the desired order.
+    Any of the entry's photos left out of the list keep their relative order
+    after the listed ones.
+    """
+    wildlife_id = request.form.get("wildlife_id", type=int)
+    image_ids = request.form.getlist("image_ids[]", type=int)
+    if wildlife_id is None:
+        return jsonify({"error": "wildlife_id is required"}), 400
+
+    conn = db_helpers.get_connection()
+    try:
+        db_helpers.ensure_images_sort_order(conn)
+        existing = [
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM Images WHERE wildlife_id = ? ORDER BY sort_order IS NULL, sort_order, id",
+                (wildlife_id,),
+            ).fetchall()
+        ]
+        existing_set = set(existing)
+        if any(image_id not in existing_set for image_id in image_ids):
+            return (
+                jsonify({"error": "image_ids must all belong to this wildlife entry"}),
+                400,
+            )
+
+        listed = list(dict.fromkeys(image_ids))
+        ordered = listed + [i for i in existing if i not in set(listed)]
+        conn.executemany(
+            "UPDATE Images SET sort_order = ? WHERE id = ?",
+            [(position, image_id) for position, image_id in enumerate(ordered)],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return jsonify({"message": "Image order updated successfully"}), 200
 
 
 @images_bp.route("/api/get-image-by-image-id/<int:image_id>", methods=["GET"])

@@ -444,6 +444,11 @@ export default function WildlifeDetails() {
   const [glossaryTerms, setGlossaryTerms] = useState([]);
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
+  const imageDragItem = useRef(null);
+  const imageDragOverItem = useRef(null);
+  const [draggingImageIndex, setDraggingImageIndex] = useState(null);
+  const [dropImageIndex, setDropImageIndex] = useState(null);
+  const [imageOrderDirty, setImageOrderDirty] = useState(false);
 
   const BASE_IMG_URL = `${import.meta.env.VITE_BACKEND_URL}/api/get-image/`;
 
@@ -581,6 +586,10 @@ export default function WildlifeDetails() {
         await apiService.updateWildlife(wildlifeId, categoryId, payload, category);
       }
 
+      // Maps a pending image's temp id to the id the server assigned it, so the
+      // saved photo order can refer to photos that were only just uploaded.
+      const savedImageIds = {};
+
       for (const pending of pendingImages) {
         const isReplacement = typeof pending.tempId !== "string" || !pending.tempId.startsWith("pending-");
 
@@ -613,6 +622,7 @@ export default function WildlifeDetails() {
           );
           savedImageId = result?.image_id;
         }
+        savedImageIds[pending.tempId] = savedImageId;
 
         if (pending.isThumbnail && savedImageId) {
           await apiService.setThumbnail({
@@ -642,6 +652,15 @@ export default function WildlifeDetails() {
         const orderedFieldIds = fieldOrder.map(name => fieldsNameToId[name]).filter(Boolean);
         await apiService.reorderFields(categoryId, orderedFieldIds, category);
         setOrderDirty(false);
+      }
+      if (imageOrderDirty) {
+        const orderedImageIds = images
+          .map(img => savedImageIds[img.id] ?? (typeof img.id === "number" ? img.id : null))
+          .filter(id => id != null);
+        await apiService.reorderImages(savedWildlifeId, orderedImageIds, category);
+        setImageOrderDirty(false);
+        // Reload so every photo carries its real server id for later reorders.
+        setImages(await apiService.getImagesByWildlifeId(savedWildlifeId, category));
       }
       setPendingImages([]);
       alert("Changes saved!");
@@ -737,6 +756,31 @@ export default function WildlifeDetails() {
     setOrderDirty(true);
     dragItem.current = null;
     dragOverItem.current = null;
+  };
+
+  const handleImageDragStart = index => {
+    imageDragItem.current = index;
+    setDraggingImageIndex(index);
+  };
+  const handleImageDragEnter = index => {
+    imageDragOverItem.current = index;
+    setDropImageIndex(index);
+  };
+  const handleImageDragEnd = () => {
+    const from = imageDragItem.current;
+    const to = imageDragOverItem.current;
+    imageDragItem.current = null;
+    imageDragOverItem.current = null;
+    setDraggingImageIndex(null);
+    setDropImageIndex(null);
+    if (from === null || to === null || from === to) return;
+    setImages(prev => {
+      const next = [...prev];
+      const [dragged] = next.splice(from, 1);
+      next.splice(to, 0, dragged);
+      return next;
+    });
+    setImageOrderDirty(true);
   };
 
   return (
@@ -887,12 +931,25 @@ export default function WildlifeDetails() {
             {/* Thumbnail Carousel */}
             <div className="p-2 mt-6">
               <div className="grid grid-cols-5 justify-items-center gap-3">
-                {images.map(img => {
+                {images.map((img, index) => {
                   const src = img.isPending ? img.previewUrl : `${BASE_IMG_URL}${img.image_path}`;
+                  const isDropTarget =
+                    admin && draggingImageIndex !== null && dropImageIndex === index && draggingImageIndex !== index;
                   return (
-                    <div key={img.id} className="relative">
+                    <div
+                      key={img.id}
+                      className={`relative rounded-lg ${admin ? "cursor-grab active:cursor-grabbing" : ""} ${
+                        draggingImageIndex === index ? "opacity-40" : ""
+                      } ${isDropTarget ? "outline outline-2 outline-offset-2 outline-pink-400" : ""}`}
+                      draggable={admin}
+                      onDragStart={() => handleImageDragStart(index)}
+                      onDragEnter={() => handleImageDragEnter(index)}
+                      onDragEnd={handleImageDragEnd}
+                      onDragOver={e => e.preventDefault()}
+                    >
                       <img
                         src={src}
+                        draggable={false}
                         className={`w-24 h-20 object-cover rounded-lg cursor-pointer transition-all ${
                           (img.isPending ? img.previewUrl : img.image_path) === highlight
                             ? "ring-4 ring-sand-500 scale-105"
@@ -900,7 +957,6 @@ export default function WildlifeDetails() {
                         }`}
                         onClick={() => setHighlight(img.isPending ? img.previewUrl : img.image_path)}
                         onContextMenu={e => e.preventDefault()}
-                        onDragStart={e => e.preventDefault()}
                       />
                     </div>
                   );
@@ -914,6 +970,13 @@ export default function WildlifeDetails() {
                   </button>
                 )}
               </div>
+              {admin && images.length > 1 && (
+                <p className="mt-3 text-xs text-center text-pink-400">
+                  {imageOrderDirty
+                    ? "Photo order changed — click Save Changes to keep it."
+                    : "Drag a photo to change the order."}
+                </p>
+              )}
             </div>
           </div>
         </div>

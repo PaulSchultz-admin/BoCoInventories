@@ -263,6 +263,19 @@ const apiService = {
     }
   },
 
+  // reorderImages saves the display order of a wildlife entry's photos.
+  reorderImages: async (wildlifeId, imageIds, dataset = "butterflies") => {
+    try {
+      const form = new FormData();
+      form.append("wildlife_id", wildlifeId);
+      imageIds.forEach(id => form.append("image_ids[]", id));
+      const response = await api.post(`/api/reorder-images/?dataset=${dataset}`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // editWildlife is an alternate backend endpoint for editing wildlife records.
   // It is kept for compatibility with multiple edit flows.
   editWildlife: async form => {

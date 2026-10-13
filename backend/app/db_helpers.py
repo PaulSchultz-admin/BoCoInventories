@@ -209,6 +209,19 @@ def init_db():
     logger.debug("Database initialized!")
 
 
+def ensure_images_sort_order(conn):
+    """Add Images.sort_order (the per-species photo display order) if missing.
+
+    Called from init_all_dbs() and also lazily from the image routes, because
+    production runs under gunicorn, which never runs init_all_dbs() — so an
+    existing production database would otherwise never get the column.
+    """
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(Images)").fetchall()]
+    if "sort_order" not in columns:
+        conn.execute("ALTER TABLE Images ADD COLUMN sort_order INTEGER")
+        conn.commit()
+
+
 def _dedupe_family_field(conn):
     """Merge any case-variant duplicates of the 'family' field into a single
     lowercase 'family' field.
@@ -430,6 +443,8 @@ def init_all_dbs():
             conn.commit()
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+        ensure_images_sort_order(conn)
 
         _seed_root_category(conn, entry.name)
         _dedupe_family_field(conn)
