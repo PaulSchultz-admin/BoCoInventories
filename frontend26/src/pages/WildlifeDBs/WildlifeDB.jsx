@@ -384,6 +384,7 @@ export function WildlifeDB({
   label,
   heroImage,
   heroPosition = "50% 50%",
+  heroQr = null,
   title,
   showLocationsMap = false,
   useDisplayList = false,
@@ -662,6 +663,14 @@ export function WildlifeDB({
             )}
           </div>
         </div>
+
+        {heroQr && (
+          <img
+            src={heroQr}
+            alt={`QR code linking to this ${type} page`}
+            className="absolute z-10 w-24 h-24 rounded-lg shadow-lg right-4 top-4 md:w-32 md:h-32 md:right-6 md:top-6"
+          />
+        )}
 
         {/* Hero page nav */}
         <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center gap-8 px-[8%] py-4 bg-black/30">
