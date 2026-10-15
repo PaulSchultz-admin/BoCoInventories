@@ -3,11 +3,12 @@
  * Displays the current dataset link, site switching menu, admin controls, and page navigation links.
  */
 import { useParams, Link, NavLink } from "react-router-dom";
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { ChevronDown, ChevronRight, House, Menu, X } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
 import { sites } from "../data/sites";
+import apiService from "../services/apiService";
 
 // Links, relative to the current dataset (e.g. "/butterflies/about").
 // Also used by WildlifeDB's hero banner.
@@ -24,12 +25,24 @@ export const NavBar = () => {
   const { category } = useParams();
   // currentSite is the dataset currently selected via the URL param.
   const currentSite = sites.find(s => s.id === category) || sites[0];
+  // disabledIds are the datasets an admin has disabled on the home page (see
+  // Home.jsx); null until loaded, so disabled ones never flash into the menu.
+  const [disabledIds, setDisabledIds] = useState(null);
+  useEffect(() => {
+    apiService
+      .getHomeDatasets()
+      .then(data => setDisabledIds(data?.disabled ?? []))
+      .catch(() => setDisabledIds([]));
+  }, []);
   // otherSites are shown in the hover dropdown to switch between datasets.
-  // Hidden sites (e.g. an unreleased dataset) are left out of this list but
-  // still resolve correctly when visited directly by URL. A hidden site's
-  // own page also gets no switcher at all, so it doesn't offer a way out to
-  // the public datasets while it's still unannounced.
-  const otherSites = currentSite.hidden ? [] : sites.filter(s => s.id !== category && !s.hidden);
+  // Hidden sites (sites.js) and sites disabled on the home page are left out
+  // of this list but still resolve correctly when visited directly by URL.
+  // Such a site's own page also gets no switcher at all, so it doesn't offer
+  // a way out to the public datasets while it's still unannounced.
+  const isUnlisted = site => site.hidden || disabledIds.includes(site.id);
+  const otherSites = disabledIds === null || isUnlisted(currentSite)
+    ? []
+    : sites.filter(s => s.id !== category && !isUnlisted(s));
 
   const { admin, logout } = useContext(AdminContext);
   const [showLogin, setShowLogin] = useState(false);

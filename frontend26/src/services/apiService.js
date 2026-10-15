@@ -441,6 +441,31 @@ const apiService = {
     }
   },
 
+  // getHomeDatasets returns the IDs of datasets disabled on the home page
+  // (shown faded there and not clickable). Not scoped to a dataset.
+  getHomeDatasets: async () => {
+    try {
+      const response = await api.get("/api/home-datasets/");
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // updateHomeDatasets replaces the list of datasets disabled on the home page. Admin only.
+  updateHomeDatasets: async disabled => {
+    try {
+      const response = await api.put(
+        "/api/home-datasets/",
+        { disabled },
+        { headers: authHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // updateDisplayList replaces the dataset's list of "common" wildlife IDs. Admin only.
   updateDisplayList: async (dataset, commonIds) => {
     try {
