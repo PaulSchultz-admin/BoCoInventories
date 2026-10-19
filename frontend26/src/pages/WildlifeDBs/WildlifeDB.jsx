@@ -13,6 +13,7 @@ import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
 import { navLinks } from "../../components/NavBar";
 import { LocationsMap } from "../../components/LocationsMap";
+import { OfflineDownload } from "../../components/OfflineDownload";
 import { useMediaQuery } from "../../utils/useMediaQuery";
 import { sites } from "../../data/sites";
 
@@ -394,7 +395,8 @@ export function WildlifeDB({
   backLabel = "Back",
   extraLinks = [],
   showFlightTimeFilter = false,
-  flightTimeZones = true
+  flightTimeZones = true,
+  offlineDownload = false
 }) {
   const hideBcna = sites.find(s => s.id === type)?.hideBcna ?? false;
   // A family split (moreFamilies) divides the dataset into two separate
@@ -694,6 +696,8 @@ export function WildlifeDB({
           ))}
         </div>
       </section>
+
+      {offlineDownload && <OfflineDownload dataset={type} label={sites.find(s => s.id === type)?.label ?? title} />}
 
       <div className="p-5">
         <div className="flex gap-5 mx-auto max-w-375">

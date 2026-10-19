@@ -12,6 +12,7 @@ export function ButterflyMoreDB() {
       extraLinks={[{ name: "Flight Calendar", path: "flight-calendar" }]}
       showFlightTimeFilter
       useDisplayList
+      offlineDownload
       moreView
     />
   );
