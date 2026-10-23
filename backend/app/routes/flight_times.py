@@ -5,11 +5,20 @@ API route for looking up which species are expected to be flying on a given
 date, in a given life zone, based on a dataset's flight_times.csv reference
 file. Two CSV shapes are supported:
 
-    - Zoned (butterflies): Family, Species, Alpine, Montane, Foothills, Plains,
-      where each zone cell holds month ranges like "Jun-Aug". Hand-digitized
-      from a BCNA field guide chart.
-    - Dated (dragonflies): Family, Species, Start, End, where Start/End are
-      MM-DD days of the year. No life zones.
+    - Zoned (butterflies, wildflowers): Family, Species, Alpine, Montane,
+      Foothills, Plains, where each zone cell holds MM-DD day ranges like
+      "06-01 to 08-31", comma-separated when a species has a gap (e.g.
+      "03-01 to 03-31, 06-01 to 08-31"). Butterflies' were hand-digitized
+      from a BCNA field guide chart at month resolution (so they run from
+      the 1st of the first month to the end of the last); wildflowers' are
+      built from iNaturalist data by scripts/build_flight_times.py.
+    - Dated: Family, Species, Start, End, where Start/End are MM-DD days of
+      the year. No life zones.
+
+A CSV with zone columns is matched by zone only, and a blank zone means "not
+found there". Dragonflies' has both: zone ranges built from iNaturalist data by
+scripts/build_flight_times.py, plus Start/End from Ann Cooper's field guide,
+kept for reference but not used.
 
 Routes include:
     - GET /api/expected-wildlife/: List species expected on a date, in a zone
@@ -25,32 +34,8 @@ from app import db_helpers
 
 flight_times_bp = Blueprint("flight_times", __name__)
 
-MONTH_ORDER = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"]
-MONTH_INDEX = {m: i for i, m in enumerate(MONTH_ORDER)}
 ZONE_COLUMNS = ["Alpine", "Montane", "Foothills", "Plains"]
 VALID_ZONE_PARAMS = ZONE_COLUMNS + ["All"]
-
-
-def parse_month_ranges(value):
-    """Expand a flight_times.csv cell like 'Jun-Aug' or 'Mar, Jun-Aug' into
-    the set of month abbreviations it covers. Unrecognized fragments are
-    skipped rather than raising, since this reads hand-transcribed data."""
-    months = set()
-    if not value:
-        return months
-    for part in value.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        if "-" in part:
-            start, end = (p.strip() for p in part.split("-", 1))
-            if start not in MONTH_INDEX or end not in MONTH_INDEX:
-                continue
-            for i in range(MONTH_INDEX[start], MONTH_INDEX[end] + 1):
-                months.add(MONTH_ORDER[i])
-        elif part in MONTH_INDEX:
-            months.add(part)
-    return months
 
 
 def _parse_month_day(value):
@@ -62,6 +47,30 @@ def _parse_month_day(value):
         return (month, day)
     except (ValueError, AttributeError):
         return None
+
+
+def parse_day_ranges(value):
+    """Expand a zoned flight_times.csv cell like '03-01 to 03-31, 06-01 to
+    08-31' into a list of ((month, day), (month, day)) periods. Malformed
+    fragments are skipped rather than raising, since this reads
+    hand-maintained data."""
+    periods = []
+    for part in (value or "").split(","):
+        start, _, end = part.partition(" to ")
+        start, end = _parse_month_day(start), _parse_month_day(end)
+        if start and end:
+            periods.append((start, end))
+    return periods
+
+
+def _in_period(month_day, period):
+    start, end = period
+    # A period can wrap the new year (e.g. 11-01 to 02-15).
+    return start <= month_day <= end if start <= end else month_day >= start or month_day <= end
+
+
+def _format_period(period):
+    return f"{_format_month_day(period[0])} – {_format_month_day(period[1])}"
 
 
 def _format_month_day(month_day):
@@ -77,9 +86,11 @@ def _normalize_dataset_name(name):
 def expected_wildlife():
     """
     Lists species from a dataset's flight_times.csv that are expected to be
-    flying on a given date, in a given life zone. For a dated CSV (no zones),
-    the zone param is ignored, "zoned" is false, "zone" is null, and each
-    species carries its "flight_period" (e.g. "Jul 15 – Aug 10") instead of zones.
+    flying on a given date, in a given life zone. Each species carries the
+    period it's expected in for each matched zone ("zone_periods"), and
+    "flight_period" when that's a single period. For a dated CSV (no zone
+    columns), the zone param is ignored, "zoned" is false, "zone" is null, and
+    each species carries only its "flight_period" (e.g. "Jul 15 – Aug 10").
 
     Query params:
         dataset (required): dataset folder name, e.g. butterflies
@@ -92,7 +103,6 @@ def expected_wildlife():
     Example output:
     {
         "date": "2026-07-04",
-        "month": "Jul",
         "zone": "Plains",
         "zoned": true,
         "species": [
@@ -101,6 +111,8 @@ def expected_wildlife():
                 "scientific_name": "Danaus plexippus",
                 "family": "Monarch and Viceroy",
                 "zones": ["Plains"],
+                "zone_periods": {"Plains": "Jun 1 – Sep 30"},
+                "flight_period": "Jun 1 – Sep 30",
                 "wildlife_id": 42,
                 "thumbnail_id": 103
             },
@@ -109,6 +121,8 @@ def expected_wildlife():
                 "scientific_name": null,
                 "family": "Skippers",
                 "zones": ["Plains"],
+                "zone_periods": {"Plains": "Jul 1 – Jul 31"},
+                "flight_period": "Jul 1 – Jul 31",
                 "wildlife_id": null,
                 "thumbnail_id": null
             }
@@ -120,7 +134,7 @@ def expected_wildlife():
     in this dataset's Wildlife table.
 
     With zone=All, a species' "zones" list can contain more than one entry,
-    since it's expected in every zone it's active in that month; with a
+    since it's expected in every zone it's active in on that date; with a
     specific zone, "zones" is always just that one zone.
     """
     dataset = request.args.get("dataset")
@@ -140,8 +154,6 @@ def expected_wildlife():
     if zone not in VALID_ZONE_PARAMS:
         return jsonify({"error": f"Invalid zone '{zone}', expected one of {VALID_ZONE_PARAMS}"}), 400
 
-    month = requested_date.strftime("%b")
-
     csv_path = os.path.join(
         db_helpers.DATA_FOLDER, _normalize_dataset_name(dataset), "flight_times.csv"
     )
@@ -154,40 +166,48 @@ def expected_wildlife():
     matches = []
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        zoned = "Start" not in (reader.fieldnames or [])
+        zoned = any(z in (reader.fieldnames or []) for z in ZONE_COLUMNS)
         for row in reader:
+            # In a zoned CSV, a blank zone means "not found there", even if the
+            # row also has Start/End (dragonflies keep their field-guide dates
+            # for reference), so a species with no zone data never matches.
             if zoned:
-                matched_zones = [
-                    z for z in zone_columns_to_check if month in parse_month_ranges(row.get(z, ""))
-                ]
-                if matched_zones:
-                    matches.append({"name": row["Species"], "family": row["Family"], "zones": matched_zones})
+                zone_periods = {}
+                for z in zone_columns_to_check:
+                    for period in parse_day_ranges(row.get(z, "")):
+                        if _in_period(requested_month_day, period):
+                            zone_periods[z] = _format_period(period)
+                            break
+                if zone_periods:
+                    periods = set(zone_periods.values())
+                    matches.append(
+                        {
+                            "name": row["Species"],
+                            "family": row["Family"],
+                            "zones": list(zone_periods),
+                            "zone_periods": zone_periods,
+                            "flight_period": periods.pop() if len(periods) == 1 else None,
+                        }
+                    )
             else:
                 start, end = _parse_month_day(row.get("Start", "")), _parse_month_day(row.get("End", ""))
-                if not start or not end:
-                    continue
-                # A period can wrap the new year (e.g. 11-01 to 02-15).
-                in_season = (
-                    start <= requested_month_day <= end
-                    if start <= end
-                    else requested_month_day >= start or requested_month_day <= end
-                )
-                if in_season:
+                if start and end and _in_period(requested_month_day, (start, end)):
                     matches.append(
                         {
                             "name": row["Species"],
                             "family": row["Family"],
                             "zones": [],
-                            "flight_period": f"{_format_month_day(start)} – {_format_month_day(end)}",
+                            "zone_periods": {},
+                            "flight_period": _format_period((start, end)),
                         }
                     )
 
-    # Match against the Wildlife table by name, normalizing apostrophe and
-    # hyphen style (the CSV uses plain ASCII; scraped DB names sometimes use
-    # curly quotes or non-breaking hyphens) and case, since otherwise e.g.
-    # "Weidemeyer's Admiral" wouldn't match "Weidemeyer’s Admiral".
+    # Match against the Wildlife table by name, normalizing apostrophe, hyphen
+    # and space style (the CSV uses plain ASCII; scraped DB names sometimes use
+    # curly quotes, non-breaking hyphens or non-breaking spaces) and case,
+    # since otherwise e.g. "Weidemeyer's Admiral" wouldn't match "Weidemeyer’s Admiral".
     def normalize_name(name):
-        return name.lower().replace("’", "'").replace("‑", "-")
+        return name.lower().replace("’", "'").replace("‑", "-").replace("\xa0", " ")
 
     wildlife_by_name = {
         normalize_name(w["name"]): w
@@ -202,7 +222,8 @@ def expected_wildlife():
                 "name": match["name"],
                 "family": match["family"],
                 "zones": match["zones"],
-                "flight_period": match.get("flight_period"),
+                "zone_periods": match["zone_periods"],
+                "flight_period": match["flight_period"],
                 "scientific_name": wildlife["scientific_name"] if wildlife else None,
                 "wildlife_id": wildlife["id"] if wildlife else None,
                 "thumbnail_id": wildlife["thumbnail_id"] if wildlife else None,
@@ -215,7 +236,6 @@ def expected_wildlife():
         jsonify(
             {
                 "date": requested_date.isoformat(),
-                "month": month,
                 "zone": zone if zoned else None,
                 "zoned": zoned,
                 "species": species,

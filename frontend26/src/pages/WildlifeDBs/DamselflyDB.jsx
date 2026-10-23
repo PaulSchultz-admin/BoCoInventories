@@ -12,7 +12,6 @@ export function DamselflyDB() {
       title="Damselflies of the Colorado Front Range"
       extraLinks={[{ name: "Flight Calendar", path: "flight-calendar" }]}
       showFlightTimeFilter
-      flightTimeZones={false}
       moreFamilies={DAMSELFLY_FAMILIES}
       moreLabel="Damselflies"
       backLabel="Dragonflies"

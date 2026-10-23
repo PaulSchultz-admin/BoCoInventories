@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Outlet, useParams, Link, NavLink, useLocation } from "react-router-dom";
 import { Footer } from "./Footer";
 import { NavBar } from "./NavBar";
 import { sites } from "../data/sites";
+import { AdminContext } from "../services/adminContext";
+import apiService from "../services/apiService";
 import { ButterflyDB } from "../pages/WildlifeDBs/ButterflyDB";
 import { DragonflyDB } from "../pages/WildlifeDBs/DragonflyDB";
 import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
@@ -27,11 +29,36 @@ export const Layout = () => {
       : DEFAULT_TITLE;
   }, [currentSite]);
 
+  // A dataset disabled on the home page (see Home.jsx) is closed to visitors
+  // on every one of its pages, not just left off the home page and switcher,
+  // so a bookmark or shared link can't reach it. Admins still see it. Nothing
+  // renders until both the disabled list and the admin check have loaded, so
+  // the dataset never flashes into view.
+  const { admin, loading: adminLoading } = useContext(AdminContext);
+  const [disabledIds, setDisabledIds] = useState(null);
+  useEffect(() => {
+    apiService
+      .getHomeDatasets()
+      .then(data => setDisabledIds(data?.disabled ?? []))
+      .catch(() => setDisabledIds([]));
+  }, []);
+  const ready = disabledIds !== null && !adminLoading;
+  const closed = ready && !admin && disabledIds.includes(category);
+
   return (
     <div className="flex flex-col min-h-screen">
       <NavBar />
       <main className="flex-1">
-        <Outlet />
+        {!ready ? null : closed ? (
+          <div className="px-5 py-20 text-center">
+            <p className="mb-4 font-serif text-lg text-sand-600">This guide isn't available right now.</p>
+            <Link to="/" className="font-serif italic text-sand-400 hover:text-sand-600">
+              ← Back to Boulder County Inventories
+            </Link>
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </main>
       <Footer />
     </div>

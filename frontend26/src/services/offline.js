@@ -14,7 +14,6 @@ const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 const SHELL_CACHE = "shell-v1"; // keep in sync with public/sw.js
 const META_KEY = "/__offline_meta__";
 const CONCURRENCY = 6;
-const ZONES = ["All", "Alpine", "Montane", "Foothills", "Plains"];
 // Pages each dataset has (EditableContent's `page` values), plus the home ones.
 const DATASET_PAGES = ["about", "resources", "info", "glossary"];
 const HOME_PAGES = ["about", "contact"];
@@ -197,31 +196,22 @@ export async function downloadOfflineDataset(dataset, onProgress = () => {}) {
     }
   );
 
-  // 3. Flight times. Zoned datasets (butterflies) only vary by month and
-  // zone; dated ones (dragonflies) vary by day. The service worker maps any
-  // requested date onto these.
+  // 3. Flight times, one answer per day of the year for all zones. The
+  // service worker maps any requested date onto these, and narrows them to a
+  // single life zone for zoned datasets.
   const expectedUrl = params => apiUrl(`/api/expected-wildlife/?dataset=${dataset}&${params}`);
   const flightJobs = [];
   try {
     const probe = await fetch(expectedUrl("zone=All"));
     if (probe.ok) {
-      const { zoned } = await probe.json();
       const pad = n => String(n).padStart(2, "0");
-      if (zoned) {
-        for (let m = 1; m <= 12; m++) {
-          for (const zone of ZONES) {
-            flightJobs.push({
-              url: expectedUrl(`date=2024-${pad(m)}-15&zone=${zone}`),
-              key: cacheKey(expectedUrl(`offline_month=${pad(m)}&zone=${zone}`))
-            });
-          }
-        }
-      } else {
-        // 2024 is a leap year, so Feb 29 is covered too.
-        for (let d = new Date(2024, 0, 1); d.getFullYear() === 2024; d.setDate(d.getDate() + 1)) {
-          const md = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-          flightJobs.push({ url: expectedUrl(`date=2024-${md}`), key: cacheKey(expectedUrl(`offline_day=${md}`)) });
-        }
+      // 2024 is a leap year, so Feb 29 is covered too.
+      for (let d = new Date(2024, 0, 1); d.getFullYear() === 2024; d.setDate(d.getDate() + 1)) {
+        const md = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        flightJobs.push({
+          url: expectedUrl(`date=2024-${md}&zone=All`),
+          key: cacheKey(expectedUrl(`offline_day=${md}`))
+        });
       }
     }
   } catch {

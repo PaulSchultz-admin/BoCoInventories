@@ -141,29 +141,34 @@ async function offlineFallback(url, key) {
 }
 
 // expectedWildlifeFallback answers a flight-times lookup for any date from
-// the per-month (zoned datasets) or per-day (dated datasets) answers that
-// offline.js saved under synthetic keys, patching in the requested date.
+// the per-day, all-zone answers that offline.js saved under synthetic keys,
+// patching in the requested date and, for zoned datasets, narrowing the
+// species to the requested life zone (as the API would).
 async function expectedWildlifeFallback(url) {
   const dataset = url.searchParams.get("dataset");
   const date = url.searchParams.get("date") || todayIso();
   const zoneParam = (url.searchParams.get("zone") || "All").trim();
   const zone = zoneParam.charAt(0).toUpperCase() + zoneParam.slice(1).toLowerCase();
   const [, month, day] = date.split("-");
-  const base = `${url.origin}/api/expected-wildlife`;
-  const candidates = [
-    cacheKey(`${base}?dataset=${dataset}&offline_month=${month}&zone=${zone}`),
-    cacheKey(`${base}?dataset=${dataset}&offline_day=${month}-${day}`)
-  ];
-  for (const key of candidates) {
-    const saved = await matchSaved(key);
-    if (!saved) continue;
-    const data = await saved.response.json();
-    return new Response(JSON.stringify({ ...data, date }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+  const key = cacheKey(`${url.origin}/api/expected-wildlife?dataset=${dataset}&offline_day=${month}-${day}`);
+  const saved = await matchSaved(key);
+  if (!saved) return null;
+  const data = await saved.response.json();
+  if (data.zoned && zone !== "All") {
+    data.zone = zone;
+    data.species = data.species
+      .filter(s => s.zones.includes(zone))
+      .map(s => ({
+        ...s,
+        zones: [zone],
+        zone_periods: { [zone]: s.zone_periods[zone] },
+        flight_period: s.zone_periods[zone]
+      }));
   }
-  return null;
+  return new Response(JSON.stringify({ ...data, date }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  });
 }
 
 function todayIso() {

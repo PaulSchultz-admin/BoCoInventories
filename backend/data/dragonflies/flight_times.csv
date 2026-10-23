@@ -1,74 +1,74 @@
-Family,Species,Start,End
-Aeshnidae (Darners),Blue-eyed Darner,05-15,10-10
-Aeshnidae (Darners),Common Green Darner,04-25,10-10
-Aeshnidae (Darners),Lake Darner,07-01,07-31
-Aeshnidae (Darners),Paddle-tailed Darner,07-01,10-03
-Aeshnidae (Darners),Sedge Darner,07-15,08-10
-Aeshnidae (Darners),Shadow Darner,07-22,09-30
-Aeshnidae (Darners),Variable Darner,07-10,09-25
-Calopterygidae (Broad-winged Damsels),American Rubyspot,05-25,08-27
-Coenagrionidae (American Bluets),Alkali Bluet,07-04,07-31
-Coenagrionidae (American Bluets),Arroyo Bluet,05-28,08-31
-Coenagrionidae (American Bluets),Boreal Bluet,06-05,08-25
-Coenagrionidae (American Bluets),Double-striped Bluet,05-15,10-10
-Coenagrionidae (American Bluets),Familiar Bluet,04-23,09-25
-Coenagrionidae (American Bluets),Northern Bluet,06-05,09-15
-Coenagrionidae (American Bluets),Orange Bluet,07-04,08-25
-Coenagrionidae (American Bluets),Rainbow Bluet,06-04,07-31
-Coenagrionidae (American Bluets),River Bluet,05-01,08-31
-Coenagrionidae (American Bluets),Tule Bluet,05-25,08-15
-Coenagrionidae (Dancers),Blue-fronted Dancer,07-07,09-04
-Coenagrionidae (Dancers),Emma's Dancer,06-15,08-27
-Coenagrionidae (Dancers),Paiute Dancer,06-01,08-25
-Coenagrionidae (Dancers),Variable Dancer,06-01,07-31
-Coenagrionidae (Dancers),Vivid Dancer,05-25,11-05
-Coenagrionidae (Eurasian Bluets),Taiga Bluet,06-20,07-31
-Coenagrionidae (Forktails),Eastern Forktail,05-20,09-20
-Coenagrionidae (Forktails),Pacific Forktail,04-20,09-20
-Coenagrionidae (Forktails),Plains Forktail,04-20,09-20
-Coenagrionidae (Forktails),Western Forktail,06-04,08-20
-Coenagrionidae (Red Damsels),Western Red Damsel,05-20,09-10
-Corduliidae (Emeralds),American Emerald,06-18,07-22
-Corduliidae (Emeralds),Dot-winged Baskettail,05-10,08-18
-Corduliidae (Emeralds),Hudsonian Emerald,07-15,08-10
-Corduliidae (Emeralds),Mountain Emerald,06-15,09-10
-Gomphidae (Clubtails),Pale Snaketail,06-05,10-07
-Gomphidae (Clubtails),Sulphur-tipped Clubtail,06-07,08-25
-Lestidae (Spreadwings),Emerald Spreadwing,06-06,10-06
-Lestidae (Spreadwings),Great Spreadwing,05-01,10-22
-Lestidae (Spreadwings),Lyre-tipped Spreadwing,06-06,08-25
-Lestidae (Spreadwings),Northern Spreadwing,06-15,09-10
-Lestidae (Spreadwings),Southern Spreadwing,05-05,08-25
-Lestidae (Spreadwings),Spotted Spreadwing,06-15,10-15
-Libellulidae (Meadowhawks),Autumn Meadowhawk,08-01,10-25
-Libellulidae (Meadowhawks),Band-winged Meadowhawk,06-10,10-25
-Libellulidae (Meadowhawks),Black Meadowhawk,05-15,10-07
-Libellulidae (Meadowhawks),Cherry-faced Meadowhawk,07-03,09-30
-Libellulidae (Meadowhawks),Red-veined Meadowhawk,07-01,08-26
-Libellulidae (Meadowhawks),Saffron-winged Meadowhawk,08-20,09-30
-Libellulidae (Meadowhawks),Striped Meadowhawk,06-04,10-15
-Libellulidae (Meadowhawks),Variegated Meadowhawk,04-01,10-07
-Libellulidae (Meadowhawks),White-faced Meadowhawk,06-01,09-25
-Libellulidae (Skimmers),Belted Whiteface,07-10,07-20
-Libellulidae (Skimmers),Black Saddlebags,05-25,09-25
-Libellulidae (Skimmers),Blue Dasher,05-15,09-10
-Libellulidae (Skimmers),Boreal Whiteface,07-04,07-20
-Libellulidae (Skimmers),Calico Pennant,06-04,09-04
-Libellulidae (Skimmers),Common Whitetail,05-25,09-20
-Libellulidae (Skimmers),Crimson-ringed Whiteface,07-10,07-25
-Libellulidae (Skimmers),Desert Whitetail,07-04,07-25
-Libellulidae (Skimmers),Dot-tailed Whiteface,05-15,08-10
-Libellulidae (Skimmers),Eastern Amberwing,06-23,09-25
-Libellulidae (Skimmers),Eastern Pondhawk,06-18,09-25
-Libellulidae (Skimmers),Eight-spotted Skimmer,05-10,08-18
-Libellulidae (Skimmers),Flame Skimmer,06-07,08-25
-Libellulidae (Skimmers),Four-spotted Skimmer,05-25,08-25
-Libellulidae (Skimmers),Halloween Pennant,07-10,09-15
-Libellulidae (Skimmers),Hudsonian Whiteface,07-04,07-18
-Libellulidae (Skimmers),Red Saddlebags,05-15,09-07
-Libellulidae (Skimmers),Roseate Skimmer,06-05,09-05
-Libellulidae (Skimmers),Spot-winged Glider,07-01,09-25
-Libellulidae (Skimmers),Twelve-spotted Skimmer,05-20,09-10
-Libellulidae (Skimmers),Wandering Glider,05-25,08-15
-Libellulidae (Skimmers),Western Pondhawk,06-18,09-25
-Libellulidae (Skimmers),Widow Skimmer,06-06,10-10
+Family,Species,Alpine,Montane,Foothills,Plains,Start,End,iNat Taxon,Observations,Basis
+Aeshnidae (Darners),Blue-eyed Darner,,,,06-08 to 07-28,05-15,10-10,67737,45,adult
+Aeshnidae (Darners),Common Green Darner,,,,05-10 to 09-06,04-25,10-10,67731,51,all
+Aeshnidae (Darners),Lake Darner,,,,,07-01,07-31,,,
+Aeshnidae (Darners),Paddle-tailed Darner,,07-15 to 09-18,,07-31 to 09-28,07-01,10-03,67726,76,all
+Aeshnidae (Darners),Sedge Darner,,,,,07-15,08-10,,,
+Aeshnidae (Darners),Shadow Darner,,,,07-15 to 09-10,07-22,09-30,67727,14,all
+Aeshnidae (Darners),Variable Darner,,07-22 to 09-11,,07-18 to 09-24,07-10,09-25,67725,23,all
+Calopterygidae (Broad-winged Damsels),American Rubyspot,,,,06-25 to 09-04,05-25,08-27,51761,31,adult
+Coenagrionidae (American Bluets),Alkali Bluet,,,,06-06 to 08-16,07-04,07-31,99898,7,all
+Coenagrionidae (American Bluets),Arroyo Bluet,,,,06-27 to 08-23,05-28,08-31,99920,13,all
+Coenagrionidae (American Bluets),Boreal Bluet,,06-20 to 08-08,,,06-05,08-25,99893,15,all
+Coenagrionidae (American Bluets),Double-striped Bluet,,,,,05-15,10-10,,,
+Coenagrionidae (American Bluets),Familiar Bluet,,,,06-04 to 09-13,04-23,09-25,99897,105,all
+Coenagrionidae (American Bluets),Northern Bluet,,,,,06-05,09-15,99889,4,all
+Coenagrionidae (American Bluets),Orange Bluet,,,,06-25 to 09-03,07-04,08-25,99924,31,all
+Coenagrionidae (American Bluets),Rainbow Bluet,,,,,06-04,07-31,,,
+Coenagrionidae (American Bluets),River Bluet,,,,,05-01,08-31,,,
+Coenagrionidae (American Bluets),Tule Bluet,,,,06-09 to 09-04,05-25,08-15,99895,71,all
+Coenagrionidae (Dancers),Blue-fronted Dancer,,,,,07-07,09-04,,,
+Coenagrionidae (Dancers),Emma's Dancer,,,,06-23 to 08-15,06-15,08-27,94542,13,all
+Coenagrionidae (Dancers),Paiute Dancer,,,,05-30 to 07-16,06-01,08-25,94534,10,all
+Coenagrionidae (Dancers),Variable Dancer,,,,,06-01,07-31,,,
+Coenagrionidae (Dancers),Vivid Dancer,,,06-06 to 07-03,06-09 to 08-12,05-25,11-05,56240,55,adult
+Coenagrionidae (Eurasian Bluets),Taiga Bluet,,,,,06-20,07-31,98280,3,all
+Coenagrionidae (Forktails),Eastern Forktail,,,,,05-20,09-20,84722,2,all
+Coenagrionidae (Forktails),Pacific Forktail,,,,,04-20,09-20,,,
+Coenagrionidae (Forktails),Plains Forktail,,,,05-10 to 08-18,04-20,09-20,103483,124,adult
+Coenagrionidae (Forktails),Western Forktail,,,,06-24 to 08-04,06-04,08-20,103497,15,all
+Coenagrionidae (Red Damsels),Western Red Damsel,,,,05-11 to 07-19,05-20,09-10,93897,19,all
+Corduliidae (Emeralds),American Emerald,,,,,06-18,07-22,,,
+Corduliidae (Emeralds),Dot-winged Baskettail,,,,05-12 to 07-07,05-10,08-18,100214,20,all
+Corduliidae (Emeralds),Hudsonian Emerald,,,,,07-15,08-10,,,
+Corduliidae (Emeralds),Mountain Emerald,,06-14 to 08-08,,,06-15,09-10,112806,10,all
+Gomphidae (Clubtails),Pale Snaketail,,,06-20 to 07-13,06-30 to 09-13,06-05,10-07,107663,68,all
+Gomphidae (Clubtails),Sulphur-tipped Clubtail,,,,,06-07,08-25,,,
+Lestidae (Spreadwings),Emerald Spreadwing,,07-09 to 08-03,06-08 to 07-04,05-30 to 07-29,06-06,10-06,104429,26,all
+Lestidae (Spreadwings),Great Spreadwing,,,,08-09 to 10-05,05-01,10-22,94513,117,all
+Lestidae (Spreadwings),Lyre-tipped Spreadwing,,,,,06-06,08-25,104461,6,all
+Lestidae (Spreadwings),Northern Spreadwing,,07-12 to 08-12,,06-29 to 09-21,06-15,09-10,104426,25,all
+Lestidae (Spreadwings),Southern Spreadwing,,,,,05-05,08-25,104419,1,all
+Lestidae (Spreadwings),Spotted Spreadwing,,,,07-16 to 09-29,06-15,10-15,104422,106,all
+Libellulidae (Meadowhawks),Autumn Meadowhawk,,,,08-05 to 10-29,08-01,10-25,68139,137,all
+Libellulidae (Meadowhawks),Band-winged Meadowhawk,,,,07-13 to 10-03,06-10,10-25,113526,88,adult
+Libellulidae (Meadowhawks),Black Meadowhawk,,08-08 to 09-12,,07-20 to 08-29,05-15,10-07,113503,19,all
+Libellulidae (Meadowhawks),Cherry-faced Meadowhawk,,07-15 to 09-11,07-04 to 08-07,07-05 to 08-15,07-03,09-30,113514,55,all
+Libellulidae (Meadowhawks),Red-veined Meadowhawk,,,,,07-01,08-26,113516,1,all
+Libellulidae (Meadowhawks),Saffron-winged Meadowhawk,,,,,08-20,09-30,113502,3,all
+Libellulidae (Meadowhawks),Striped Meadowhawk,,,,07-26 to 10-02,06-04,10-15,113521,43,adult
+Libellulidae (Meadowhawks),Variegated Meadowhawk,,,05-22 to 07-12,05-13 to 09-29,04-01,10-07,68138,54,adult
+Libellulidae (Meadowhawks),White-faced Meadowhawk,,,,07-09 to 09-26,06-01,09-25,113519,42,adult
+Libellulidae (Skimmers),Belted Whiteface,,06-21 to 08-03,06-29 to 07-04,,07-10,07-20,104553,20,all
+Libellulidae (Skimmers),Black Saddlebags,,,,07-08 to 09-02,05-25,09-25,52865,44,all
+Libellulidae (Skimmers),Blue Dasher,,,,07-01 to 08-29,05-15,09-10,59774,196,all
+Libellulidae (Skimmers),Boreal Whiteface,,06-08 to 07-22,,,07-04,07-20,104544,9,all
+Libellulidae (Skimmers),Calico Pennant,,,,06-07 to 08-09,06-04,09-04,63160,30,all
+Libellulidae (Skimmers),Common Whitetail,,,,06-07 to 08-13,05-25,09-20,84549,44,adult
+Libellulidae (Skimmers),Crimson-ringed Whiteface,,,,,07-10,07-25,104549,2,all
+Libellulidae (Skimmers),Desert Whitetail,,,,,07-04,07-25,109630,1,all
+Libellulidae (Skimmers),Dot-tailed Whiteface,,,,05-17 to 07-03,05-15,08-10,104551,41,all
+Libellulidae (Skimmers),Eastern Amberwing,,,,06-28 to 08-16,06-23,09-25,59776,82,all
+Libellulidae (Skimmers),Eastern Pondhawk,,,,07-16 to 08-28,06-18,09-25,61495,19,all
+Libellulidae (Skimmers),Eight-spotted Skimmer,,,06-21 to 07-19,05-28 to 07-15,05-10,08-18,84369,19,all
+Libellulidae (Skimmers),Flame Skimmer,,,,,06-07,08-25,,,
+Libellulidae (Skimmers),Four-spotted Skimmer,,06-28 to 08-03,06-01 to 07-22,05-24 to 07-16,05-25,08-25,57443,69,all
+Libellulidae (Skimmers),Halloween Pennant,,,,07-03 to 09-03,07-10,09-15,50147,121,all
+Libellulidae (Skimmers),Hudsonian Whiteface,,06-22 to 07-20,,,07-04,07-18,104550,5,all
+Libellulidae (Skimmers),Red Saddlebags,,,,,05-15,09-07,114314,3,all
+Libellulidae (Skimmers),Roseate Skimmer,,,,,06-05,09-05,68233,2,all
+Libellulidae (Skimmers),Spot-winged Glider,,,,,07-01,09-25,52584,1,all
+Libellulidae (Skimmers),Twelve-spotted Skimmer,,,,06-19 to 08-04,05-20,09-10,81495,42,adult
+Libellulidae (Skimmers),Wandering Glider,,,,,05-25,08-15,108344,3,all
+Libellulidae (Skimmers),Western Pondhawk,,,,06-21 to 09-05,06-18,09-25,85408,59,all
+Libellulidae (Skimmers),Widow Skimmer,,,,06-15 to 08-20,06-06,10-10,47934,66,adult

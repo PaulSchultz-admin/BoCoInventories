@@ -10,7 +10,7 @@ from app.routes.auth import auth_bp
 from app.routes.content import content_bp
 from app.routes.location_photos import location_photos_bp
 from app.routes.display_list import display_list_bp
-from app.routes.home_datasets import home_datasets_bp
+from app.routes.home_datasets import home_datasets_bp, read_disabled
 from app.routes.flight_times import flight_times_bp
 from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -64,6 +64,11 @@ def create_app(test_config=None):
 
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    # Serve routes with or without their trailing slash instead of redirecting.
+    # Admin requests carry an Authorization header, so the browser sends a CORS
+    # preflight first, and a preflight can't follow a redirect: e.g.
+    # /api/get-wildlife?dataset=... would fail in admin mode.
+    app.url_map.strict_slashes = False
 
     # Called here (rather than gated behind `if __name__ == "__main__"` in
     # main.py like db_helpers.init_all_dbs()) because gunicorn imports
@@ -133,6 +138,37 @@ def create_app(test_config=None):
                 400,
             )
         return None
+
+    # A dataset disabled on the home page (data/home/home_datasets.json) is
+    # refused to anyone without a valid admin token, so its data can't be
+    # reached by calling the API directly. The token comes from the usual
+    # "Authorization: Bearer" header, or an admin_token query param for image
+    # URLs used in <img> tags, which can't send headers. A request with no
+    # dataset param is checked against the default dataset it falls back to.
+    # Left open: login, the dataset lists the site needs to know what's
+    # disabled, and /api/get-image/<filename>, which searches every dataset
+    # and whose random 32-hex-digit filenames are only revealed by the refused
+    # listing routes.
+    open_blueprints = {"auth", "home_datasets"}
+    open_endpoints = {"get_datasets", "images.get_image"}
+
+    @app.before_request
+    def refuse_disabled_dataset():
+        if request.method == "OPTIONS" or request.endpoint is None:
+            return None
+        if request.blueprint in open_blueprints or request.endpoint in open_endpoints:
+            return None
+        dataset = request.args.get("dataset") or app.config.get("DEFAULT_DATASET")
+        if not dataset:
+            return None
+        dataset_key = _normalize_dataset_name(dataset)
+        if dataset_key not in read_disabled():
+            return None
+        auth_header = request.headers.get("Authorization", "")
+        token = auth_header[len("Bearer "):] if auth_header.startswith("Bearer ") else request.args.get("admin_token")
+        if admin_sessions.is_valid_token(token):
+            return None
+        return jsonify({"error": f"Dataset '{dataset_key}' is not available"}), 403
 
     @app.get("/api/datasets/")
     def get_datasets():

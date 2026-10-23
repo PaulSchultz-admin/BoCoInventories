@@ -8,6 +8,8 @@ export function WildflowerDB() {
       heroImage="/wildflower-hero.jpg"
       heroPosition="25% 50%" 
       title="Wildflowers of Boulder County"
+      extraLinks={[{ name: "Bloom Calendar", path: "flight-calendar" }]}
+      showFlightTimeFilter
     />
   );
 }

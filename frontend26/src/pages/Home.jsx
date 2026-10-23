@@ -5,7 +5,8 @@
  * see apiService.getHomeDatasets); a disabled dataset's tile stays visible
  * but faded and unclickable, and it's also left out of the NavBar's site
  * switcher. This is independent of sites.js's `hidden` flag, which only
- * affects the switcher.
+ * affects the switcher. Below the tiles, an "Expected on a date" search
+ * covers the datasets that have flight-time data.
  */
 import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
@@ -13,6 +14,11 @@ import { Eye, EyeOff } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
 import { sites } from "../data/sites";
+import { ExpectedOnDate } from "../components/ExpectedOnDate";
+
+// Datasets searched by the home page's "Expected on a date" section (each has
+// a flight_times.csv). Ones disabled on the home page are skipped.
+const EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers"];
 
 export const Home = () => {
   const { admin } = useContext(AdminContext);
@@ -108,6 +114,8 @@ export const Home = () => {
             })}
         </div>
       </section>
+
+      {disabled && <ExpectedOnDate datasets={EXPECTED_DATASETS.filter(id => !disabled.includes(id))} />}
     </>
   );
 };

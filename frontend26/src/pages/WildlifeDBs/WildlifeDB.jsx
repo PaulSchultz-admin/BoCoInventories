@@ -10,7 +10,7 @@ import { AdminContext } from "../../services/adminContext";
 import { NavLink } from "react-router-dom";
 import { Filter, X } from "lucide-react";
 import FlexSearch from "flexsearch";
-import apiService from "../../services/apiService";
+import apiService, { withAdminToken } from "../../services/apiService";
 import { navLinks } from "../../components/NavBar";
 import { LocationsMap } from "../../components/LocationsMap";
 import { OfflineDownload } from "../../components/OfflineDownload";
@@ -45,7 +45,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
       <div className="overflow-hidden aspect-square bg-sand-100">
         {image ? (
           <img
-            src={`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
+            src={withAdminToken(`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`)}
             alt={name}
             className="object-contain w-full h-full transition-transform duration-300 group-hover:scale-105"
           />

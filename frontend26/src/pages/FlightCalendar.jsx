@@ -2,15 +2,19 @@
  * FlightCalendar shows a grid of species expected to be seen on a chosen date
  * (default today), in a chosen life zone (default All), based on the
  * dataset's flight_times.csv. Datasets whose flight times aren't broken out by
- * life zone (the API reports zoned: false) get no zone picker, and each card
- * shows the species' flight period instead. Datasets without the file show a
+ * life zone (the API reports zoned: false) get no zone picker. Each card
+ * shows the species' flight period(s). Datasets without the file show a
  * friendly "no data yet" message.
  */
 import { useState, useEffect } from "react";
 import { useParams, NavLink } from "react-router-dom";
-import apiService from "../services/apiService";
+import apiService, { withAdminToken } from "../services/apiService";
 
 const ZONES = ["All", "Alpine", "Montane", "Foothills", "Plains"];
+
+// Wildflowers' "flight times" are bloom times, built from iNaturalist
+// phenology data (see backend/scripts/build_flight_times.py).
+const CALENDAR_TITLES = { wildflowers: "Bloom Calendar" };
 
 function todayIso() {
   const d = new Date();
@@ -20,13 +24,26 @@ function todayIso() {
 
 // SpeciesCard mirrors WildlifeDB's card styling. Species without a matching
 // Wildlife record (wildlifeId is null) render as a plain, non-clickable card.
-function SpeciesCard({ dataset, name, scientificName, wildlifeId, thumbnailId, zones, showZones, flightPeriod }) {
+// When a species' zones have different periods (flightPeriod is null), each
+// zone gets its own line with its period.
+export function SpeciesCard({
+  dataset,
+  name,
+  scientificName,
+  wildlifeId,
+  thumbnailId,
+  zones,
+  showZones,
+  flightPeriod,
+  zonePeriods
+}) {
+  const periodPerZone = showZones && !flightPeriod && zones?.length > 0;
   const content = (
     <>
       <div className="overflow-hidden aspect-square bg-sand-100">
         {thumbnailId ? (
           <img
-            src={`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${thumbnailId}?dataset=${dataset}`}
+            src={withAdminToken(`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${thumbnailId}?dataset=${dataset}`)}
             alt={name}
             className="object-contain w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
@@ -41,7 +58,16 @@ function SpeciesCard({ dataset, name, scientificName, wildlifeId, thumbnailId, z
         {scientificName && (
           <p className="mt-0.5 font-serif text-xs italic truncate text-sand-400">{scientificName}</p>
         )}
-        {showZones && zones?.length > 0 && (
+        {periodPerZone &&
+          zones.map(zone => (
+            <p
+              key={zone}
+              className="mt-1 font-['Montserrat',sans-serif] text-[10px] uppercase tracking-wide text-sand-400 truncate"
+            >
+              {zonePeriods?.[zone] ? `${zone}: ${zonePeriods[zone]}` : zone}
+            </p>
+          ))}
+        {showZones && !periodPerZone && zones?.length > 0 && (
           <p className="mt-1 font-['Montserrat',sans-serif] text-[10px] uppercase tracking-wide text-sand-400 truncate">
             {zones.join(", ")}
           </p>
@@ -101,6 +127,7 @@ export function FlightCalendar() {
   // life zones, so the zone picker stays hidden rather than flickering.
   const zoned = result?.zoned === true;
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const zonePhrase = zoned && result.zone !== "All" ? ` in the ${result.zone} zone` : "";
 
   const grouped = new Map();
   for (const s of result?.species ?? []) {
@@ -119,7 +146,7 @@ export function FlightCalendar() {
         </NavLink>
 
         <h1 className="font-[Cormorant_Garamond] italic text-4xl font-semibold text-sand-600 mb-1">
-          Flight Calendar
+          {CALENDAR_TITLES[category] ?? "Flight Calendar"}
         </h1>
         <p className="mb-6 font-serif text-sand-400">
           See which species are expected on a given date{zoned ? ", at a given elevation" : ""}.
@@ -169,13 +196,9 @@ export function FlightCalendar() {
         {!loading && !error && result && (
           <>
             <p className="mb-6 font-serif text-sand-500">
-              {!zoned
-                ? result.species.length === 0
-                  ? `No species are expected on ${dateLabel}.`
-                  : `${result.species.length} species expected on ${dateLabel}.`
-                : result.species.length === 0
-                  ? `No species are expected in the ${result.zone} zone in ${result.month}.`
-                  : `${result.species.length} species expected in the ${result.zone} zone in ${result.month}.`}
+              {result.species.length === 0
+                ? `No species are expected${zonePhrase} on ${dateLabel}.`
+                : `${result.species.length} species expected${zonePhrase} on ${dateLabel}.`}
             </p>
 
             {[...grouped.entries()].map(([family, list]) => (
@@ -195,6 +218,7 @@ export function FlightCalendar() {
                       zones={s.zones}
                       showZones={zone === "All"}
                       flightPeriod={s.flight_period}
+                      zonePeriods={s.zone_periods}
                     />
                   ))}
                 </div>

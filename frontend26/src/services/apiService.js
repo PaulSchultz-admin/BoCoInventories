@@ -23,6 +23,22 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+// Every request carries the admin token when there is one, since the backend
+// refuses all of a disabled dataset's data to non-admins.
+api.interceptors.request.use(config => {
+  Object.entries(authHeaders()).forEach(([name, value]) => config.headers.set(name, value, false));
+  return config;
+});
+
+// withAdminToken adds the stored admin token to an image URL used in an <img>
+// tag, which can't send headers, so admins still see a disabled dataset's
+// photos. Only needed for the numbered image routes; /api/get-image/<filename>
+// is never refused.
+export const withAdminToken = url => {
+  const token = localStorage.getItem("admin_token");
+  return token ? `${url}${url.includes("?") ? "&" : "?"}admin_token=${encodeURIComponent(token)}` : url;
+};
+
 const apiService = {
   // getTest is a simple ping endpoint for verifying backend connectivity.
   getTest: async () => {
@@ -507,7 +523,7 @@ const apiService = {
 
   // locationPhotoImageUrl builds the URL for a location photo's image file.
   locationPhotoImageUrl: (id, dataset = "butterflies") =>
-    `${BASE_URL}/api/get-location-photo-image/${id}?dataset=${dataset}`,
+    withAdminToken(`${BASE_URL}/api/get-location-photo-image/${id}?dataset=${dataset}`),
 
   // createLocationPhoto uploads a geotagged photo (GPS pulled from its EXIF data) with a comment.
   createLocationPhoto: async (imageFile, comment, dataset = "butterflies") => {
