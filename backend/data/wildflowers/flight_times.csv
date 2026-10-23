@@ -23,7 +23,7 @@ Brassicaceae (Mustard),Western Wallflower,,06-11 to 07-15,04-06 to 05-31,04-22 t
 Cactaceae (Cactus),Prickly Pear Cactus,,04-26 to 09-05,03-28 to 09-21,03-21 to 09-27,78269,1023,all
 Campanulaceae (Bellflower),Harebell,,07-07 to 09-14,06-02 to 09-03,06-02 to 06-25,793756,63,flowering
 Capparaceae (Caper),Rocky Mountain Bee Plant,,,07-25 to 08-25,06-09 to 09-07,1415100,143,flowering
-Commelinacea (Spiderwort),Western Spiderwort,,,05-01 to 06-14,05-14 to 06-14,121785,34,flowering
+Commelinaceae (Spiderwort),Western Spiderwort,,,05-01 to 06-14,05-14 to 06-14,121785,34,flowering
 Crassulaceae (Stonecrop),Stonecrop,06-24 to 08-21,06-05 to 08-22,04-28 to 07-16,04-26 to 07-18,79026,1139,all
 Fabaceae (Pea),Colorado Locoweed,,06-23 to 07-29,05-18 to 06-24,05-11 to 06-18,138674,1025,all
 Fabaceae (Pea),Golden Banner,,06-07 to 08-21,04-24 to 06-02,04-25 to 06-18,169718,233,all
@@ -31,8 +31,8 @@ Fabaceae (Pea),Purple Prairie Clover,,,06-23 to 08-15,06-18 to 08-22,63547,398,a
 Fabaceae (Pea),Silvery Lupine,,06-15 to 08-29,05-22 to 07-05,06-15 to 07-19,62691,39,flowering
 Geraniaceae (Geranium),Wild Geranium,,06-15 to 09-26,05-31 to 08-27,05-16 to 07-22,163256,53,flowering
 Grossulariaceae (Gooseberry),Wax Currant,,05-17 to 08-21,04-20 to 08-04,04-14 to 07-07,78854,843,all
-Helleboraceae,Carolina Larkspur,,,06-11 to 06-28,06-04 to 06-27,161660,184,all
-Helleboraceae  (Hellebore,Colorado Columbine,06-29 to 08-17,06-20 to 08-01,06-12 to 07-04,,501742,425,flowering
+Helleboraceae (Hellebore),Carolina Larkspur,,,06-11 to 06-28,06-04 to 06-27,161660,184,all
+Helleboraceae (Hellebore),Colorado Columbine,06-29 to 08-17,06-20 to 08-01,06-12 to 07-04,,501742,425,flowering
 Iridaceae (Iris),Wild Iris,,06-04 to 07-12,05-05 to 06-11,04-27 to 06-01,57730,476,all
 Lamiaceae (Mint),"Bee Balm, Horsemint",,07-09 to 08-01,06-19 to 08-01,06-16 to 07-19,85320,49,flowering
 Lamiaceae (Mint),Skullcap,,06-11 to 07-03,05-18 to 06-25,05-07 to 06-09,168707,410,all
@@ -46,9 +46,9 @@ Polemoniaceae (Phlox),"Scarlet Gilia, Skyrocket",,07-02 to 08-28,06-01 to 08-01,
 Polygonaceae (Buckwheat),Sulphur Flower,,06-24 to 07-18,06-06 to 07-06,05-30 to 06-25,77040,131,flowering
 Portulacaceae (Purslane),Spring Beauty,,,03-22 to 05-03,03-13 to 04-20,160673,42,flowering
 Primulaceae (Primrose),Shooting Star,06-12 to 07-10,06-12 to 07-18,05-26 to 06-29,04-16 to 06-04,498086,501,all
-Ranunculacea (Buttercup),Sugarbowl,,04-30 to 08-03,05-09 to 06-15,04-14 to 06-03,160688,157,all
 Ranunculaceae (Buttercup),Pasqueflower,,04-25 to 06-10,04-04 to 05-17,03-25 to 04-29,881504,211,flowering
+Ranunculaceae (Buttercup),Sugarbowl,,04-30 to 08-03,05-09 to 06-15,04-14 to 06-03,160688,157,all
 Ranunculaceae (Buttercup),"Virgin's Bower, White Clematis",,,06-26 to 10-05,06-20 to 10-05,58996,222,all
 Rosaceae (Rose),Boulder Raspberry,,06-05 to 06-24,05-06 to 06-07,04-25 to 05-31,168041,69,flowering
 Rosaceae (Rose),Chokecherry,,,04-27 to 06-05,04-19 to 05-22,54835,53,flowering
-Violaccae (Violet),Nuttall's Violet,,,04-02 to 05-09,03-27 to 05-11,127918,33,flowering
+Violaceae (Violet),Nuttall's Violet,,,04-02 to 05-09,03-27 to 05-11,127918,33,flowering
