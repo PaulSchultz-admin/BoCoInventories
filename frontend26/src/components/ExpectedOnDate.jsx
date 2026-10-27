@@ -2,7 +2,9 @@
  * ExpectedOnDate is the home page's "Expected on a date" search: one date
  * (default today) and life zone, looked up across several datasets at once
  * via each one's flight_times.csv (see apiService.getExpectedWildlife).
- * Results are shown per dataset, using the Flight Calendar's species cards.
+ * Each dataset gets a selector labeled with its species count; clicking one
+ * reveals that dataset's species cards (the Flight Calendar's) and hides any
+ * other's, and clicking it again hides them.
  * Datasets whose flight times aren't broken out by life zone (the API reports
  * zoned: false) ignore the zone picker.
  */
@@ -30,6 +32,9 @@ export function ExpectedOnDate({ datasets }) {
   // It's null only until the first lookup finishes; later lookups keep the
   // previous results on screen until the new ones arrive.
   const [results, setResults] = useState(null);
+  // selected is the dataset whose cards are shown, or null for none. It stays
+  // selected when the date or zone changes.
+  const [selected, setSelected] = useState(null);
 
   const datasetsKey = datasets.join(",");
 
@@ -108,48 +113,69 @@ export function ExpectedOnDate({ datasets }) {
 
         {!results && <p className="italic font-serif text-sand-400">Loading…</p>}
 
+        {results && (
+          <div className="flex flex-wrap gap-3 mb-8">
+            {datasets.map(id => {
+              const result = results[id];
+              const isSelected = selected === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setSelected(isSelected ? null : id)}
+                  className={`px-5 py-2.5 rounded-full border font-serif text-lg transition-colors ${
+                    isSelected
+                      ? "bg-sand-600 border-sand-600 text-sand-50"
+                      : "bg-white border-sand-300 text-sand-600 hover:bg-sand-100"
+                  }`}
+                >
+                  {sites.find(s => s.id === id)?.label ?? id}
+                  <span className={`ml-2 font-['Montserrat',sans-serif] text-sm ${isSelected ? "text-sand-200" : "text-sand-400"}`}>
+                    {result ? result.species.length : "–"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {results &&
-          datasets.map(id => {
-            const site = sites.find(s => s.id === id);
-            const result = results[id];
+          selected &&
+          datasets.includes(selected) &&
+          (() => {
+            const result = results[selected];
             const species = result?.species ?? [];
+            if (!result) return <p className="italic font-serif text-sand-400">No flight-time data available yet.</p>;
+            if (species.length === 0) {
+              return (
+                <p className="italic font-serif text-sand-400">{`None expected${zonePhrase(result)} on ${dateLabel}.`}</p>
+              );
+            }
             return (
-              <div key={id} className="mb-10">
-                <h3 className="pb-1 mb-4 font-serif text-xl font-semibold border-b text-sand-600 border-sand-200">
-                  {site?.label ?? id}
-                </h3>
-                {!result ? (
-                  <p className="italic font-serif text-sand-400">No flight-time data available yet.</p>
-                ) : species.length === 0 ? (
-                  <p className="italic font-serif text-sand-400">
-                    {`None expected${zonePhrase(result)} on ${dateLabel}.`}
-                  </p>
-                ) : (
-                  <>
-                    <p className="mb-4 font-serif text-sand-500">
-                      {`${species.length} expected${zonePhrase(result)} on ${dateLabel}.`}
-                    </p>
-                    <div className="flex flex-wrap gap-5">
-                      {species.map(s => (
-                        <SpeciesCard
-                          key={s.name}
-                          dataset={id}
-                          name={s.name}
-                          scientificName={s.scientific_name}
-                          wildlifeId={s.wildlife_id}
-                          thumbnailId={s.thumbnail_id}
-                          zones={s.zones}
-                          showZones={result.zoned && zone === "All"}
-                          flightPeriod={s.flight_period}
-                          zonePeriods={s.zone_periods}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+              <>
+                <p className="mb-4 font-serif text-sand-500">
+                  {`${species.length} expected${zonePhrase(result)} on ${dateLabel}.`}
+                </p>
+                <div className="flex flex-wrap gap-5">
+                  {species.map(s => (
+                    <SpeciesCard
+                      key={s.name}
+                      dataset={selected}
+                      name={s.name}
+                      scientificName={s.scientific_name}
+                      wildlifeId={s.wildlife_id}
+                      thumbnailId={s.thumbnail_id}
+                      zones={s.zones}
+                      showZones={result.zoned && zone === "All"}
+                      flightPeriod={s.flight_period}
+                      zonePeriods={s.zone_periods}
+                    />
+                  ))}
+                </div>
+              </>
             );
-          })}
+          })()}
       </div>
     </section>
   );
