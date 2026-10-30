@@ -318,7 +318,7 @@ function generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc) {
   .header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
   .name { font-size: 20px; font-weight: bold; }
   .sci { font-size: 18px; font-style: italic; }
-  .photo { width: 100%; height: 310px; object-fit: cover; border: 1px solid #bbb; display: block; margin-bottom: 16px; }
+  .photo { max-width: 100%; max-height: 480px; width: auto; height: auto; border: 1px solid #bbb; display: block; margin: 0 auto 16px; }
   .fields p { margin-bottom: 13px; font-size: 15px; line-height: 1.55; }
   @media print {
     body { background: white; padding: 0; justify-content: flex-start; }
@@ -384,7 +384,7 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
           </div>
 
           {/* Photo */}
-          <img src={imageSrc} alt={wildlife.name} className="object-cover w-full h-56 mb-4 border border-gray-300" />
+          <img src={imageSrc} alt={wildlife.name} className="block max-w-full mx-auto mb-4 border border-gray-300 max-h-96" />
 
           {/* Fields */}
           <div className="space-y-2 text-sm leading-relaxed">
