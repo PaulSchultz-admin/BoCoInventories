@@ -1,4 +1,5 @@
 import { WildlifeDB } from "./WildlifeDB";
+import { WILDFLOWER_LISTS } from "../../data/wildflowerLists";
 
 export function WildflowerDB() {
   return (
@@ -10,6 +11,9 @@ export function WildflowerDB() {
       title="Wildflowers of Boulder County"
       extraLinks={[{ name: "Bloom Calendar", path: "flight-calendar" }]}
       showFlightTimeFilter
+      useDisplayList
+      moreLists={WILDFLOWER_LISTS}
+      offlineDownload
     />
   );
 }

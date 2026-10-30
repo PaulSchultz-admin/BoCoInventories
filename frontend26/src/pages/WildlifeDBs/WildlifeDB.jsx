@@ -212,22 +212,32 @@ function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, s
 
 // EditDisplayListModal lets an admin choose which species count as "common"
 // (shown on the main grid) versus "less common" (shown on the "More" page).
-function EditDisplayListModal({ allWildlife, commonIds, onSave, onClose }) {
-  const [checked, setChecked] = useState(new Set(commonIds));
+// A dataset with named "More" lists (moreLists) instead gets one column of
+// checkboxes per page, Main first; a species may be on any number of them.
+function EditDisplayListModal({ allWildlife, commonIds, moreLists = [], lists = {}, onSave, onClose }) {
+  const columns = [{ key: MAIN_LIST, label: "Main" }, ...moreLists];
+  const multi = moreLists.length > 0;
+  const [checked, setChecked] = useState(() => ({
+    [MAIN_LIST]: new Set(commonIds),
+    ...Object.fromEntries(moreLists.map(l => [l.key, new Set(lists[l.key] ?? [])]))
+  }));
   const [saving, setSaving] = useState(false);
   const sorted = [...allWildlife].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
-  const toggle = id =>
+  const toggle = (key, id) =>
     setChecked(prev => {
-      const next = new Set(prev);
+      const next = new Set(prev[key]);
       next.has(id) ? next.delete(id) : next.add(id);
-      return next;
+      return { ...prev, [key]: next };
     });
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave([...checked]);
+      await onSave(
+        [...checked[MAIN_LIST]],
+        multi ? Object.fromEntries(moreLists.map(l => [l.key, [...checked[l.key]]])) : undefined
+      );
     } finally {
       setSaving(false);
     }
@@ -236,29 +246,56 @@ function EditDisplayListModal({ allWildlife, commonIds, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
       <div
-        className="w-full max-w-sm max-h-[80vh] flex flex-col p-6 shadow-2xl bg-white rounded-2xl"
+        className={`w-full ${multi ? "max-w-2xl" : "max-w-sm"} max-h-[80vh] flex flex-col p-6 shadow-2xl bg-white rounded-2xl`}
         onClick={e => e.stopPropagation()}
       >
         <h2 className="mb-1 text-xl font-serif font-bold text-sand-600">Edit display list</h2>
         <p className="mb-4 text-sm text-sand-400">
-          Checked species show on the main page. Unchecked species show on the "More" page.
+          {multi
+            ? "Check a species to show it on that page. A species can be on several pages, or none (it's still findable by search)."
+            : 'Checked species show on the main page. Unchecked species show on the "More" page.'}
         </p>
         <div className="flex-1 overflow-y-auto -mx-1 px-1">
-          {sorted.map(w => (
-            <label
-              key={w.id}
-              className="flex items-center gap-3 py-1.5 px-1 rounded cursor-pointer hover:bg-sand-100"
-            >
-              <input
-                type="checkbox"
-                className="accent-sand-400 w-4 h-4 shrink-0"
-                checked={checked.has(w.id)}
-                onChange={() => toggle(w.id)}
-              />
-              <span className="font-serif text-sand-600">{w.name}</span>
-              <span className="font-serif italic text-sand-400 text-sm">{w.scientific_name}</span>
-            </label>
-          ))}
+          {multi && (
+            <div className="sticky top-0 z-10 flex items-end gap-3 pb-1.5 px-1 bg-white border-b border-sand-200">
+              {columns.map(c => (
+                <span
+                  key={c.key}
+                  className="w-14 shrink-0 text-center font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-wider uppercase text-sand-300"
+                >
+                  {c.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {sorted.map(w => {
+            // With a single column the whole row toggles it; with several,
+            // each checkbox cell is its own click target.
+            const Row = multi ? "div" : "label";
+            const Cell = multi ? "label" : "span";
+            return (
+              <Row
+                key={w.id}
+                className={`flex items-center gap-3 py-1.5 px-1 rounded hover:bg-sand-100 ${multi ? "" : "cursor-pointer"}`}
+              >
+                {columns.map(c => (
+                  <Cell key={c.key} className={`flex justify-center shrink-0 ${multi ? "w-14 cursor-pointer" : ""}`}>
+                    <input
+                      type="checkbox"
+                      aria-label={multi ? `${w.name}: ${c.label}` : undefined}
+                      className="accent-sand-400 w-4 h-4"
+                      checked={checked[c.key].has(w.id)}
+                      onChange={() => toggle(c.key, w.id)}
+                    />
+                  </Cell>
+                ))}
+                <span className="min-w-0 truncate">
+                  <span className="font-serif text-sand-600">{w.name}</span>{" "}
+                  <span className="font-serif italic text-sand-400 text-sm">{w.scientific_name}</span>
+                </span>
+              </Row>
+            );
+          })}
         </div>
         <div className="flex justify-end gap-3 mt-5">
           <button
@@ -380,6 +417,10 @@ function loadFilterState(type) {
 // Sentinel for a dataset that uses the display-list split but hasn't saved a list yet.
 const ALL_COMMON = "all";
 
+// Key for the main grid's column in the display list editor, alongside any
+// named "More" lists (moreLists) a dataset keeps.
+const MAIN_LIST = "main";
+
 export function WildlifeDB({
   type,
   label,
@@ -393,6 +434,8 @@ export function WildlifeDB({
   moreFamilies = null,
   moreLabel = "More",
   backLabel = "Back",
+  moreLists = [],
+  moreList = null,
   extraLinks = [],
   showFlightTimeFilter = false,
   flightTimeZones = true,
@@ -411,6 +454,7 @@ export function WildlifeDB({
   const [selectedGenera, setSelectedGenera] = useState(savedFilters?.selectedGenera ?? new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [commonIds, setCommonIds] = useState(null); // null = not loaded yet, ALL_COMMON = no list configured (only used when useDisplayList)
+  const [namedLists, setNamedLists] = useState({}); // moreLists key -> Set of wildlife IDs
   const [showEditDisplayList, setShowEditDisplayList] = useState(false);
   const [flightFilterEnabled, setFlightFilterEnabled] = useState(savedFilters?.flightFilterEnabled ?? false);
   const [flightDate, setFlightDate] = useState(savedFilters?.flightDate ?? todayIso());
@@ -450,13 +494,19 @@ export function WildlifeDB({
     if (!useDisplayList) return;
     apiService
       .getDisplayList(type)
-      .then(data => setCommonIds(data?.common_ids == null ? ALL_COMMON : new Set(data.common_ids)))
+      .then(data => {
+        setNamedLists(Object.fromEntries(Object.entries(data?.lists ?? {}).map(([key, ids]) => [key, new Set(ids)])));
+        setCommonIds(data?.common_ids == null ? ALL_COMMON : new Set(data.common_ids));
+      })
       .catch(() => setCommonIds(new Set()));
   }, [type, useDisplayList]);
 
-  const saveDisplayList = async newCommonIds => {
-    await apiService.updateDisplayList(type, newCommonIds);
+  const saveDisplayList = async (newCommonIds, newLists) => {
+    await apiService.updateDisplayList(type, newCommonIds, newLists);
     setCommonIds(new Set(newCommonIds));
+    if (newLists) {
+      setNamedLists(Object.fromEntries(Object.entries(newLists).map(([key, ids]) => [key, new Set(ids)])));
+    }
     setShowEditDisplayList(false);
   };
 
@@ -467,8 +517,9 @@ export function WildlifeDB({
     [commonIds, wildlife]
   );
 
-  // The subset of wildlife this particular view (main grid vs. "More" page)
-  // actually shows. Datasets without a "More" page show everything, as before.
+  // The subset of wildlife this particular view (main grid vs. "More" page,
+  // or one named list's page) actually shows. Datasets without a "More" page
+  // show everything, as before.
   const visibleWildlife = useMemo(() => {
     if (familySplit) {
       return wildlife.filter(w => {
@@ -479,8 +530,12 @@ export function WildlifeDB({
     }
     if (!useDisplayList) return wildlife;
     if (effectiveCommonIds === null) return []; // still loading the display list
+    if (moreList) {
+      const ids = namedLists[moreList] ?? new Set();
+      return wildlife.filter(w => ids.has(w.id));
+    }
     return wildlife.filter(w => (moreView ? !effectiveCommonIds.has(w.id) : effectiveCommonIds.has(w.id)));
-  }, [wildlife, familySplit, moreFamilies, useDisplayList, moreView, effectiveCommonIds]);
+  }, [wildlife, familySplit, moreFamilies, useDisplayList, moreView, moreList, namedLists, effectiveCommonIds]);
 
   // Persist filter state whenever it changes so it's there when the user comes back.
   useEffect(() => {
@@ -819,6 +874,25 @@ export function WildlifeDB({
               className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
 
+            {/* Named "More" lists get a row of page selectors, Main first. */}
+            {moreLists.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {[{ key: null, label: "Main" }, ...moreLists].map(l => (
+                  <NavLink
+                    key={l.label}
+                    to={l.key ? `/${type}/more/${l.key}` : `/${type}`}
+                    className={`px-4 py-1.5 font-serif text-sm rounded-full border transition-colors ${
+                      (moreList ?? null) === l.key
+                        ? "bg-sand-400 border-sand-400 text-white"
+                        : "bg-white border-sand-200 text-sand-600 hover:bg-sand-100"
+                    }`}
+                  >
+                    {l.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+
             {showLocationsMap && !isDesktop && (
               <div className="mt-5">
                 <LocationsMap type={type} />
@@ -841,11 +915,13 @@ export function WildlifeDB({
 
             {filtered.length === 0 && (
               <p className="mt-10 font-serif italic text-center text-sand-400">
-                No {type} found for "{search}"
+                {moreList && !search.trim() && !hasFilters
+                  ? `No ${type} on this page yet`
+                  : `No ${type} found for "${search}"`}
               </p>
             )}
 
-            {useDisplayList && !moreView && (
+            {useDisplayList && !moreView && moreLists.length === 0 && (
               <div className="mt-8 text-center">
                 <NavLink
                   to={`/${type}/more`}
@@ -874,6 +950,8 @@ export function WildlifeDB({
         <EditDisplayListModal
           allWildlife={wildlife}
           commonIds={effectiveCommonIds ?? new Set()}
+          moreLists={moreLists}
+          lists={Object.fromEntries(Object.entries(namedLists).map(([key, ids]) => [key, [...ids]]))}
           onSave={saveDisplayList}
           onClose={() => setShowEditDisplayList(false)}
         />

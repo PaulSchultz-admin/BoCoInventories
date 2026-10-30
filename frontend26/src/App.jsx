@@ -39,6 +39,10 @@ const router = createBrowserRouter([
             element: <DynamicMoreDBRouter />
           },
           {
+            path: "more/:list",
+            element: <DynamicMoreDBRouter />
+          },
+          {
             path: "info",
             element: <Info />
           },
