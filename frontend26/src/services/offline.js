@@ -17,6 +17,9 @@ const CONCURRENCY = 6;
 // Pages each dataset has (EditableContent's `page` values), plus the home ones.
 const DATASET_PAGES = ["about", "resources", "info", "glossary"];
 const HOME_PAGES = ["about", "contact"];
+// Datasets whose photos are saved as the backend's low-resolution copies
+// (max 1000 px, see backend/app/offline_images.py) instead of full size.
+const LOW_RES_DATASETS = new Set(["wildflowers"]);
 
 export const offlineSupported = typeof window !== "undefined" && "serviceWorker" in navigator && "caches" in window;
 
@@ -219,7 +222,16 @@ export async function downloadOfflineDataset(dataset, onProgress = () => {}) {
   }
 
   // 4. Photos: every species photo, grid thumbnails (by image ID), location
-  // map photos, and images embedded in the dataset's pages.
+  // map photos, and images embedded in the dataset's pages. For a low-res
+  // dataset each one is fetched with ?size=offline but saved under its normal
+  // URL, so the pages (which ask for the normal URL) get the small copy.
+  const lowRes = LOW_RES_DATASETS.has(dataset);
+  const savePhoto = (url, options = {}) => {
+    if (!lowRes) return save(url, options);
+    const small = new URL(url);
+    small.searchParams.set("size", "offline");
+    return save(small.href, { ...options, key: cacheKey(url) });
+  };
   const photoUrls = new Set();
   imagesBySpecies.flat().forEach(img => img?.image_path && photoUrls.add(apiUrl(`/api/get-image/${img.image_path}`)));
   pages.forEach(page => {
@@ -237,11 +249,11 @@ export async function downloadOfflineDataset(dataset, onProgress = () => {}) {
   await runPool(
     [
       ...flightJobs.map(job => () => save(job.url, { key: job.key })),
-      ...[...photoUrls].map(url => () => save(url, { skipIfCached: true })),
+      ...[...photoUrls].map(url => () => savePhoto(url, { skipIfCached: true })),
       // Thumbnails and location photos are looked up by ID, and an ID's file
       // can be replaced, so they're always fetched fresh.
-      ...thumbnailUrls.map(url => () => save(url)),
-      ...locationUrls.map(url => () => save(url))
+      ...thumbnailUrls.map(url => () => savePhoto(url)),
+      ...locationUrls.map(url => () => savePhoto(url))
     ],
     job => job()
   );
@@ -251,6 +263,7 @@ export async function downloadOfflineDataset(dataset, onProgress = () => {}) {
     bytes,
     species: wildlife.length,
     photos: photoUrls.size,
+    lowRes,
     failed
   };
   await cache.put(META_KEY, new Response(JSON.stringify(status), { headers: { "Content-Type": "application/json" } }));

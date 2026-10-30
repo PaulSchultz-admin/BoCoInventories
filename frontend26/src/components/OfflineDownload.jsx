@@ -84,7 +84,7 @@ export function OfflineDownload({ dataset, label }) {
           {online ? <CircleCheck size={16} strokeWidth={2} className="text-green-700" /> : <WifiOff size={16} strokeWidth={2} />}
           {online ? "Saved for offline use" : "You're offline — using your saved copy"}
           <span className="text-sand-400">
-            · {formatBytes(status.bytes)} · {formatDate(status.savedAt)}
+            · {formatBytes(status.bytes)}{status.lowRes && " (smaller photos)"} · {formatDate(status.savedAt)}
             {status.failed > 0 && ` · ${status.failed} item${status.failed === 1 ? "" : "s"} missing`}
           </span>
         </span>

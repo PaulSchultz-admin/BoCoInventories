@@ -16,9 +16,10 @@ Routes:
 
 import os
 import logging
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify
 from exif import Image
 from app import db_helpers
+from app.offline_images import send_image
 from app.utils import save_file
 
 logger = logging.getLogger(__name__)
@@ -160,7 +161,7 @@ def get_location_photo_image(location_photo_id):
     image_folder = db_helpers.find_existing_image_folder(filename)
     if image_folder is None:
         return jsonify({"error": f"Image file '{filename}' not found"}), 404
-    return send_from_directory(image_folder, filename)
+    return send_image(image_folder, filename)
 
 
 @location_photos_bp.route("/api/delete-location-photo/", methods=["DELETE"])

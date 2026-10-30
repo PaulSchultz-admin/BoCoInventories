@@ -22,11 +22,12 @@ Routes include:
     - POST /api/reorder-images/: Save the display order of a wildlife entry's photos
     - DELETE /api/delete_image/: Delete image and associated file
 """
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify
 import logging
 import os
 import json
 from app import db_helpers
+from app.offline_images import send_image
 
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
 from app.utils import save_file  # Adjust import if needed
@@ -93,6 +94,7 @@ def get_image(filename):
 
     Example request:
     GET /api/get-image/1234abcd.png
+    GET /api/get-image/1234abcd.png?size=offline  (low-resolution copy, see offline_images.py)
 
     Example output:
     (The image file)
@@ -102,7 +104,7 @@ def get_image(filename):
         return jsonify({"error": f"Image '{filename}' not found in any dataset"}), 404
     file_path = os.path.join(image_folder, filename)
     logger.debug(f"Serving image '{filename}' from {file_path}")
-    return send_from_directory(image_folder, filename)
+    return send_image(image_folder, filename)
 
 
 @images_bp.route("/api/add-image/", methods=["POST"])
@@ -444,7 +446,7 @@ def get_image_by_image_id(image_id):
     image_folder = db_helpers.find_existing_image_folder(filename)
     if image_folder is None:
         return jsonify({"error": f"Image file '{filename}' not found"}), 404
-    return send_from_directory(image_folder, filename)
+    return send_image(image_folder, filename)
 
 
 def delete_image_by_id(image_id):
