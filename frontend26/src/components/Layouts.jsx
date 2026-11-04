@@ -116,14 +116,14 @@ export const DynamicDBRouter = () => {
 
 // DynamicMoreDBRouter renders a category's "More" page — the less-common
 // species grid linked from the main page's "More" link. Only categories that
-// opt into a split have one: a display list (butterflies, raptors), a
-// family split (dragonflies, whose "More" page is Damselflies), or several
-// named lists at /more/:list (wildflowers: Spring, Alpine, ...).
+// opt into a split have one: a display list (raptors), a family split
+// (dragonflies, whose "More" page is Damselflies), or several named lists at
+// /more/:list (wildflowers: Spring, Alpine, ...; butterflies: Medium, Small).
 export const DynamicMoreDBRouter = () => {
   const { category, list } = useParams();
 
   const components = {
-    butterflies: <ButterflyMoreDB />,
+    butterflies: <ButterflyMoreDB list={list} />,
     dragonflies: <DamselflyDB />,
     raptors: <RaptorMoreDB />,
     wildflowers: <WildflowerMoreDB list={list} />

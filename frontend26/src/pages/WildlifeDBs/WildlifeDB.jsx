@@ -11,6 +11,7 @@ import { NavLink } from "react-router-dom";
 import { Filter, X } from "lucide-react";
 import FlexSearch from "flexsearch";
 import apiService, { withAdminToken } from "../../services/apiService";
+import { sortBySize, splitBySize, wingspanText } from "../../data/butterflySizes";
 import { navLinks } from "../../components/NavBar";
 import { LocationsMap } from "../../components/LocationsMap";
 import { OfflineDownload } from "../../components/OfflineDownload";
@@ -214,15 +215,29 @@ function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, s
 // (shown on the main grid) versus "less common" (shown on the "More" page).
 // A dataset with named "More" lists (moreLists) instead gets one column of
 // checkboxes per page, Main first; a species may be on any number of them.
-function EditDisplayListModal({ allWildlife, commonIds, moreLists = [], lists = {}, onSave, onClose }) {
-  const columns = [{ key: MAIN_LIST, label: "Main" }, ...moreLists];
+// With listsBySize, the pages are size groups instead: each species is on just
+// one (radio buttons), rows run largest first, and a button re-sorts everything
+// into equal groups by wingspan.
+function EditDisplayListModal({
+  allWildlife,
+  commonIds,
+  mainLabel = "Main",
+  moreLists = [],
+  lists = {},
+  listsBySize = false,
+  onSave,
+  onClose
+}) {
+  const columns = [{ key: MAIN_LIST, label: mainLabel }, ...moreLists];
   const multi = moreLists.length > 0;
   const [checked, setChecked] = useState(() => ({
     [MAIN_LIST]: new Set(commonIds),
     ...Object.fromEntries(moreLists.map(l => [l.key, new Set(lists[l.key] ?? [])]))
   }));
   const [saving, setSaving] = useState(false);
-  const sorted = [...allWildlife].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const sorted = listsBySize
+    ? sortBySize(allWildlife)
+    : [...allWildlife].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   const toggle = (key, id) =>
     setChecked(prev => {
@@ -230,6 +245,22 @@ function EditDisplayListModal({ allWildlife, commonIds, moreLists = [], lists = 
       next.has(id) ? next.delete(id) : next.add(id);
       return { ...prev, [key]: next };
     });
+
+  const moveTo = (key, id) =>
+    setChecked(prev =>
+      Object.fromEntries(
+        Object.entries(prev).map(([k, ids]) => {
+          const next = new Set(ids);
+          k === key ? next.add(id) : next.delete(id);
+          return [k, next];
+        })
+      )
+    );
+
+  const sortIntoEqualGroups = () => {
+    const groups = splitBySize(allWildlife, columns.length);
+    setChecked(Object.fromEntries(columns.map((c, i) => [c.key, new Set(groups[i].map(w => w.id))])));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -251,10 +282,21 @@ function EditDisplayListModal({ allWildlife, commonIds, moreLists = [], lists = 
       >
         <h2 className="mb-1 text-xl font-serif font-bold text-sand-600">Edit display list</h2>
         <p className="mb-4 text-sm text-sand-400">
-          {multi
+          {listsBySize
+            ? "Choose the page each species shows on, largest first."
+            : multi
             ? "Check a species to show it on that page. A species can be on several pages, or none (it's still findable by search)."
             : 'Checked species show on the main page. Unchecked species show on the "More" page.'}
         </p>
+        {listsBySize && (
+          <button
+            type="button"
+            onClick={sortIntoEqualGroups}
+            className="self-start px-4 py-1.5 mb-4 text-sm transition-colors border rounded-full border-sand-300 text-sand-600 hover:bg-sand-100"
+          >
+            Sort into equal groups by size
+          </button>
+        )}
         <div className="flex-1 overflow-y-auto -mx-1 px-1">
           {multi && (
             <div className="sticky top-0 z-10 flex items-end gap-3 pb-1.5 px-1 bg-white border-b border-sand-200">
@@ -281,17 +323,20 @@ function EditDisplayListModal({ allWildlife, commonIds, moreLists = [], lists = 
                 {columns.map(c => (
                   <Cell key={c.key} className={`flex justify-center shrink-0 ${multi ? "w-14 cursor-pointer" : ""}`}>
                     <input
-                      type="checkbox"
+                      type={listsBySize ? "radio" : "checkbox"}
+                      name={listsBySize ? `display-list-${w.id}` : undefined}
                       aria-label={multi ? `${w.name}: ${c.label}` : undefined}
                       className="accent-sand-400 w-4 h-4"
                       checked={checked[c.key].has(w.id)}
-                      onChange={() => toggle(c.key, w.id)}
+                      onChange={() => (listsBySize ? moveTo(c.key, w.id) : toggle(c.key, w.id))}
                     />
                   </Cell>
                 ))}
                 <span className="min-w-0 truncate">
                   <span className="font-serif text-sand-600">{w.name}</span>{" "}
-                  <span className="font-serif italic text-sand-400 text-sm">{w.scientific_name}</span>
+                  <span className="font-serif italic text-sand-400 text-sm">
+                    {listsBySize ? wingspanText(w) : w.scientific_name}
+                  </span>
                 </span>
               </Row>
             );
@@ -434,8 +479,10 @@ export function WildlifeDB({
   moreFamilies = null,
   moreLabel = "More",
   backLabel = "Back",
+  mainLabel = "Main",
   moreLists = [],
   moreList = null,
+  listsBySize = false,
   extraLinks = [],
   showFlightTimeFilter = false,
   flightTimeZones = true,
@@ -874,10 +921,10 @@ export function WildlifeDB({
               className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
 
-            {/* Named "More" lists get a row of page selectors, Main first. */}
+            {/* Named "More" lists get a row of page selectors, the main page first. */}
             {moreLists.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
-                {[{ key: null, label: "Main" }, ...moreLists].map(l => (
+                {[{ key: null, label: mainLabel }, ...moreLists].map(l => (
                   <NavLink
                     key={l.label}
                     to={l.key ? `/${type}/more/${l.key}` : `/${type}`}
@@ -950,8 +997,10 @@ export function WildlifeDB({
         <EditDisplayListModal
           allWildlife={wildlife}
           commonIds={effectiveCommonIds ?? new Set()}
+          mainLabel={mainLabel}
           moreLists={moreLists}
           lists={Object.fromEntries(Object.entries(namedLists).map(([key, ids]) => [key, [...ids]]))}
+          listsBySize={listsBySize}
           onSave={saveDisplayList}
           onClose={() => setShowEditDisplayList(false)}
         />
