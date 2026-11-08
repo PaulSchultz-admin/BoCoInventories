@@ -14,11 +14,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
 import { sites } from "../data/sites";
-import { ExpectedOnDate } from "../components/ExpectedOnDate";
-
-// Datasets searched by the home page's "Expected on a date" section (each has
-// a flight_times.csv). Ones disabled on the home page are skipped.
-const EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers"];
+import { ExpectedOnDate, EXPECTED_DATASETS } from "../components/ExpectedOnDate";
 
 export const Home = () => {
   const { admin } = useContext(AdminContext);

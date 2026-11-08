@@ -6,7 +6,8 @@
  * that dataset's species cards (the Flight Calendar's) on and off,
  * independently of the others.
  * Datasets whose flight times aren't broken out by life zone (the API reports
- * zoned: false) ignore the zone picker.
+ * zoned: false) ignore the zone picker. With fixedZone (a park's own zone, on
+ * the Parks page) there's no picker: the search always uses that zone.
  */
 import { useState, useEffect } from "react";
 import apiService from "../services/apiService";
@@ -14,6 +15,10 @@ import { sites } from "../data/sites";
 import { SpeciesCard } from "../pages/FlightCalendar";
 
 const ZONES = ["All", "Alpine", "Montane", "Foothills", "Plains"];
+
+// The datasets with a flight_times.csv, which this search can cover. Pages using
+// it leave out any that are disabled on the home page.
+export const EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers"];
 
 function todayIso() {
   const d = new Date();
@@ -24,10 +29,11 @@ function todayIso() {
 // zonePhrase is " in the Alpine zone" etc., or "" for All zones.
 const zonePhrase = result => (result.zone && result.zone !== "All" ? ` in the ${result.zone} zone` : "");
 
-export function ExpectedOnDate({ datasets }) {
+export function ExpectedOnDate({ datasets, fixedZone }) {
   const [date, setDate] = useState(todayIso());
   // Defaults to Foothills here; the per-dataset calendars default to "All".
-  const [zone, setZone] = useState("Foothills");
+  const [pickedZone, setZone] = useState("Foothills");
+  const zone = fixedZone ?? pickedZone;
   // results maps dataset id -> API response, or null if that lookup failed.
   // It's null only until the first lookup finishes; later lookups keep the
   // previous results on screen until the new ones arrive.
@@ -79,7 +85,7 @@ export function ExpectedOnDate({ datasets }) {
           {new Intl.ListFormat("en", { type: "conjunction" }).format(
             datasets.map(id => sites.find(s => s.id === id)?.label.toLowerCase() ?? id)
           )}{" "}
-          are expected on a given date.
+          are expected on a given date{fixedZone ? ` in the ${fixedZone} zone` : ""}.
         </p>
 
         <div className="flex flex-wrap items-end gap-4 p-4 mb-8 border rounded bg-sand-100 border-sand-200">
@@ -92,7 +98,7 @@ export function ExpectedOnDate({ datasets }) {
               className="px-3 py-2 font-serif bg-white border rounded outline-none border-sand-200 focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
           </label>
-          {anyZoned && (
+          {anyZoned && !fixedZone && (
             <label className="flex flex-col gap-1">
               <span className="font-['Montserrat',sans-serif] text-xs uppercase tracking-widest text-sand-400">
                 Life zone

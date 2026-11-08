@@ -29,7 +29,7 @@ L.Icon.Default.mergeOptions({
 
 // Boulder County's actual boundary, fit with zero padding so the county
 // fills the whole box rather than leaving dead space around it.
-const BOULDER_COUNTY_BOUNDS = [
+export const BOULDER_COUNTY_BOUNDS = [
   [39.8794, -105.6871],
   [40.2614, -105.1785]
 ];
@@ -38,7 +38,7 @@ const BOULDER_COUNTY_BOUNDS = [
 // container when it's created, so a map that starts out at the wrong size
 // (e.g. created while hidden, or before an iPad rotates) would otherwise
 // show only a few tiles, so this refits Boulder County whenever the box resizes.
-function FitOnResize() {
+export function FitOnResize() {
   const map = useMap();
   useEffect(() => {
     const observer = new ResizeObserver(() => {

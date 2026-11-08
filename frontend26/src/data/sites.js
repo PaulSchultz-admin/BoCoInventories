@@ -60,5 +60,19 @@ export const sites = [
     label: "Raptors",
     hoverBg: "hover:bg-sky-50",
     hideBcna: true
+  },
+  {
+    // Not a species dataset: its entries are parks, each with its own photos.
+    // Its pages (pages/Parks.jsx, and a park's page via WildlifeDetails) have
+    // no NavBar, so it has no logo of its own and stays out of the switcher.
+    id: "parks",
+    noNavBar: true,
+    path: "/parks",
+    logo: "/home-hero.jpg",
+    heroImage: "/home-hero.jpg",
+    label: "Parks",
+    hoverBg: "hover:bg-green-50",
+    hidden: true,
+    hideBcna: true
   }
 ];

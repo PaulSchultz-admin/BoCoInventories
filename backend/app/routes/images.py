@@ -164,7 +164,8 @@ def add_image():
 
     # Copyright defaults to a hand-entered value, then the image's EXIF
     # copyright tag, then the organization's name.
-    exif_copyright = str(exif_dict.get("copyright", "")).strip()
+    # Some cameras fill an unset copyright tag with NUL bytes, which isn't a name.
+    exif_copyright = str(exif_dict.get("copyright", "")).strip(" \x00")
     copyright_value = manual_copyright or exif_copyright or DEFAULT_COPYRIGHT
 
     # Date taken defaults to a hand-entered value, then the image's EXIF

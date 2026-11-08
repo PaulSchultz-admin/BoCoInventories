@@ -11,6 +11,7 @@ import { Resources } from "./pages/Resources";
 import { Contact } from "./pages/Contact";
 import { Glossary } from "./pages/Glossary";
 import { Home } from "./pages/Home";
+import { Parks } from "./pages/Parks";
 
 const router = createBrowserRouter([
   {
@@ -19,7 +20,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "about", element: <About dataset="home" heroImage="/home-hero.jpg" /> },
-      { path: "contact", element: <Contact dataset="home" heroImage="/home-hero.jpg" /> }
+      { path: "contact", element: <Contact dataset="home" heroImage="/home-hero.jpg" /> },
+      { path: "parks", element: <Parks /> }
     ]
   },
   {

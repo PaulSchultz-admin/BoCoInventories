@@ -10,6 +10,8 @@ import { X, Camera, Trash, GripVertical, ChevronLeft, ChevronRight } from "lucid
 import { findGlossaryEntry, highlightGlossaryTerms } from "../utils/glossaryHighlight";
 import { GlossaryTerm } from "../components/GlossaryTerm";
 import { FILTERED_ORDER_PREFIX } from "./WildlifeDBs/WildlifeDB";
+import { ParkInfo, ParkNotes, ParkExpected } from "../components/ParkDetails";
+import { signPhoto } from "../utils/parkLocation";
 
 // ImageEditModal shows the image upload/edit form in a modal.
 // It handles previewing a file, editing metadata, and optionally deleting the image.
@@ -178,7 +180,7 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
 // a watermarked version of the selected wildlife photo.
 // Navigation between photos is via the left/right arrow buttons, or a
 // left/right swipe on touch devices.
-function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
+function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose, backLabel }) {
   const [watermarkedSrc, setWatermarkedSrc] = useState(null);
   const [index, setIndex] = useState(startIndex);
   const touchStartRef = useRef(null);
@@ -279,7 +281,7 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
 
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
         <p className="font-bold">{wildlife.name}</p>
-        <p className="italic">{wildlife.scientific_name}</p>
+        {wildlife.scientific_name !== wildlife.name && <p className="italic">{wildlife.scientific_name}</p>}
         {matchedImage?.comment && <p className="italic">{matchedImage.comment}</p>}
         {matchedImage?.location_taken && <p>{matchedImage.location_taken}</p>}
         {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
@@ -289,6 +291,11 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose }) {
         <p className="">© {matchedImage?.copyright || "Boulder County Nature Association"}</p>
         {images.length > 1 && <p className="mt-1 text-xs text-white/60">Photo {index + 1} of {images.length}</p>}
       </div>
+      {backLabel && (
+        <button className="absolute text-sm text-white top-6 left-5 md:text-base hover:underline" onClick={onClose}>
+          ← {backLabel}
+        </button>
+      )}
       <button className="absolute text-3xl text-white top-5 right-5" onClick={onClose}>
         &times;
       </button>
@@ -423,6 +430,10 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
 export default function WildlifeDetails() {
   const { admin } = useContext(AdminContext);
   const { category, wildlifeId } = useParams();
+  // A park's page shows its own details (components/ParkDetails.jsx) instead
+  // of the species info card, and has nothing to print, so the info card and
+  // Print Layout button are left out.
+  const isPark = category === "parks";
 
   const [wildlife, setWildlife] = useState(null);
   const [filteredData, setFilteredData] = useState({});
@@ -463,6 +474,9 @@ export default function WildlifeDetails() {
           c => c.name.toLowerCase() === category.toLowerCase()
         );
 
+        // A park's fields still load (creating an entry needs every field sent,
+        // even blank), though its info card is hidden: they're edited on the
+        // Parks page instead.
         const fieldNames = (categoryEntry?.field_ids || []).map(id => fieldsResponse.fields[id]).filter(Boolean);
 
         if (isNew) {
@@ -575,7 +589,8 @@ export default function WildlifeDetails() {
       const payload = {
         ...filteredData,
         name: wildlife.name,
-        scientific_name: wildlife.scientific_name
+        // The backend requires a unique second name; a park reuses its own.
+        scientific_name: isPark ? wildlife.name : wildlife.scientific_name
         // remove category_id from here entirely — pass it separately below
       };
 
@@ -685,7 +700,8 @@ export default function WildlifeDetails() {
     try {
       await apiService.deleteWildlife(wildlifeId, category);
       alert("Successfully deleted.");
-      navigate(-1); // or navigate("/admin") — wherever your list lives
+      if (isPark) navigate("/parks");
+      else navigate(-1); // or navigate("/admin") — wherever your list lives
     } catch (error) {
       console.error("Delete failed:", error);
       const backendMessage =
@@ -699,7 +715,9 @@ export default function WildlifeDetails() {
   // Arrow buttons and swipe gestures step to the adjacent species in
   // orderedSpeciesIds, wrapping around at either end.
   const currentSpeciesIndex = orderedSpeciesIds.indexOf(Number(wildlifeId));
-  const hasSpeciesSiblings = orderedSpeciesIds.length > 1 && currentSpeciesIndex !== -1;
+  // Parks don't step to each other: a park's page is reached from its card on
+  // the Parks page, so its main photo has no arrows or park-to-park swipe.
+  const hasSpeciesSiblings = !isPark && orderedSpeciesIds.length > 1 && currentSpeciesIndex !== -1;
   const prevSpeciesId = hasSpeciesSiblings
     ? orderedSpeciesIds[(currentSpeciesIndex - 1 + orderedSpeciesIds.length) % orderedSpeciesIds.length]
     : null;
@@ -796,29 +814,34 @@ export default function WildlifeDetails() {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-sand-50">
           <Link to={`/${category}`} className="absolute text-sm top-4 left-4 md:text-base hover:underline">
-            ← Back to Database
+            ← Back to {isPark ? "Parks" : "Database"}
           </Link>
           {admin ? (
             <div className="flex flex-col items-center gap-2 w-max">
               <input
                 type="text"
-                placeholder="Common Name"
+                placeholder={isPark ? "Park Name" : "Common Name"}
                 className="text-4xl md:text-5xl font-serif font-bold text-center bg-transparent border-b-2 border-pink-400 outline-none w-full placeholder:text-sand-200/50"
                 value={wildlife?.name || ""}
                 onChange={e => setWildlife({ ...wildlife, name: e.target.value })}
               />
-              <input
-                type="text"
-                placeholder="Scientific Name"
-                className="text-xl md:text-2xl font-serif italic mt-2 opacity-90 bg-transparent border-b border-pink-300 outline-none text-center w-full placeholder:text-sand-200/50"
-                value={wildlife?.scientific_name || ""}
-                onChange={e => setWildlife({ ...wildlife, scientific_name: e.target.value })}
-              />
+              {!isPark && (
+                <input
+                  type="text"
+                  placeholder="Scientific Name"
+                  className="text-xl md:text-2xl font-serif italic mt-2 opacity-90 bg-transparent border-b border-pink-300 outline-none text-center w-full placeholder:text-sand-200/50"
+                  value={wildlife?.scientific_name || ""}
+                  onChange={e => setWildlife({ ...wildlife, scientific_name: e.target.value })}
+                />
+              )}
             </div>
           ) : (
             <>
               <h1 className="text-4xl md:text-5xl font-serif font-bold text-center">{wildlife.name}</h1>
-              <p className="text-xl md:text-2xl font-serif italic mt-2 opacity-90">{wildlife.scientific_name}</p>
+              {/* The backend requires a unique second name, so a park repeats its own. */}
+              {wildlife.scientific_name !== wildlife.name && (
+                <p className="text-xl md:text-2xl font-serif italic mt-2 opacity-90">{wildlife.scientific_name}</p>
+              )}
             </>
           )}
         </div>
@@ -828,7 +851,7 @@ export default function WildlifeDetails() {
       <div className="relative z-10 max-w-6xl px-4 mx-auto -mt-10">
         <div className="flex flex-col gap-8 p-6 overflow-hidden shadow-2xl bg-sand-50 rounded-xl lg:flex-row">
           {/* Left Column: Info Card (Original Layout + Admin Inputs) */}
-          <div className="order-2 p-8 border lg:order-1 lg:w-5/12 bg-sand-100/70 rounded-2xl border-sand-200/50">
+          <div className={`order-2 p-8 border lg:order-1 lg:w-5/12 bg-sand-100/70 rounded-2xl border-sand-200/50 ${isPark ? "hidden" : ""}`}>
             {fieldOrder.map((key, index) => {
               const label = key.replace("_", " ");
               const labelGlossaryEntry = findGlossaryEntry(label, glossaryTerms);
@@ -871,7 +894,15 @@ export default function WildlifeDetails() {
           </div>
 
           {/* Right Column */}
-          <div className="order-1 flex flex-col lg:order-2 lg:w-7/12">
+          <div className={`order-1 flex flex-col lg:order-2 ${isPark ? "w-full" : "lg:w-7/12"}`}>
+            {isPark && (
+              <ParkInfo
+                fields={filteredData}
+                sign={signPhoto(images, wildlife?.thumbnail_id)}
+                admin={admin}
+                onChange={handleInputChange}
+              />
+            )}
             <div
               className="relative group cursor-zoom-in bg-sand-100 rounded-2xl"
               onTouchStart={handleSpeciesTouchStart}
@@ -978,11 +1009,17 @@ export default function WildlifeDetails() {
                 </p>
               )}
             </div>
+            {isPark && (
+              <>
+                <ParkNotes fields={filteredData} admin={admin} onChange={handleInputChange} />
+                <ParkExpected lifeZone={filteredData["Life zone"]} />
+              </>
+            )}
           </div>
         </div>
 
         {/* Action Bar — Print Layout is available to everyone; Destroy/Save are admin-only */}
-        <div className="fixed z-50 flex items-center gap-6 px-8 py-4 -translate-x-1/2 bg-white border border-pink-100 rounded-full shadow-2xl bottom-8 left-1/2">
+        <div className={`fixed z-50 flex items-center gap-6 px-8 py-4 -translate-x-1/2 bg-white border border-pink-100 rounded-full shadow-2xl bottom-8 left-1/2 ${isPark && !admin ? "hidden" : ""}`}>
           {admin && !isNew && (
             <button
               onClick={handleDelete}
@@ -992,12 +1029,14 @@ export default function WildlifeDetails() {
             </button>
           )}
 
-          <button
-            onClick={() => setShowPrintLayout(true)}
-            className="px-6 py-2 font-bold text-blue-600 transition-all border border-blue-300 rounded-full hover:bg-blue-50"
-          >
-            Print Layout
-          </button>
+          {!isPark && (
+            <button
+              onClick={() => setShowPrintLayout(true)}
+              className="px-6 py-2 font-bold text-blue-600 transition-all border border-blue-300 rounded-full hover:bg-blue-50"
+            >
+              Print Layout
+            </button>
+          )}
 
           {admin && (
             <button
@@ -1020,6 +1059,7 @@ export default function WildlifeDetails() {
             wildlife={wildlife}
             baseUrl={BASE_IMG_URL}
             onClose={() => setImageClicked(null)}
+            backLabel={isPark ? "Back to Photos" : undefined}
           />
         )}
         {showPrintLayout && (

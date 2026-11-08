@@ -375,7 +375,7 @@ def _seed_site_content(conn):
 
 # "home" isn't a wildlife dataset: it only holds the site home page's own
 # About/Contact content (PageContent), so it has no species entries.
-EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats", "raptors", "home"]
+EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats", "raptors", "parks", "home"]
 
 
 def init_all_dbs():

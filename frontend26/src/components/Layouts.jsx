@@ -48,7 +48,7 @@ export const Layout = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <NavBar />
+      {!currentSite?.noNavBar && <NavBar />}
       <main className="flex-1">
         {!ready ? null : closed ? (
           <div className="px-5 py-20 text-center">
