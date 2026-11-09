@@ -10,6 +10,8 @@ data/**/uploaded_images/*
 data/**/offline_images/
 !data/**/uploaded_images/.gitkeep
 data/database.db
+# Photo submissions from the public (personal info; see routes/submissions.py)
+data/submissions/
 
 # Environment secrets
 .env

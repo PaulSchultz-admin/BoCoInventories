@@ -86,6 +86,23 @@ Boulder, CO 80306
 
 Stay up to date with BCNA events, field trips, and nature news on social media. Find us on [Facebook](https://www.facebook.com/BoulderCountyNatureAssociation) and [Instagram](https://www.instagram.com/bouldernatue).
 """,
+    # Site-wide copyright pages, reached from the home page's Copyrights menu
+    # (they live in the "home" dataset, like the home About/Contact pages).
+    "copyright-policy": """## Copyright Policy and Procedures
+
+Content coming soon.
+""",
+    "copyright-submissions": """## Submissions and Permissions
+
+Content coming soon.
+""",
+    "copyright-info": """## Copyright Info
+
+Content coming soon.
+""",
 }
 
 VALID_PAGES = set(DEFAULT_PAGES)
+
+# Pages whose content can only be read by a logged-in admin, not just edited.
+ADMIN_ONLY_PAGES = {"copyright-info"}

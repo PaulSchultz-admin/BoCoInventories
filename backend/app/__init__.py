@@ -11,6 +11,7 @@ from app.routes.content import content_bp
 from app.routes.location_photos import location_photos_bp
 from app.routes.display_list import display_list_bp
 from app.routes.home_datasets import home_datasets_bp, read_disabled
+from app.routes.submissions import submissions_bp
 from app.routes.flight_times import flight_times_bp
 from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -145,11 +146,11 @@ def create_app(test_config=None):
     # "Authorization: Bearer" header, or an admin_token query param for image
     # URLs used in <img> tags, which can't send headers. A request with no
     # dataset param is checked against the default dataset it falls back to.
-    # Left open: login, the dataset lists the site needs to know what's
-    # disabled, and /api/get-image/<filename>, which searches every dataset
+    # Left open: photo submissions (not part of any dataset), login, the
+    # dataset lists the site needs to know what's disabled, and /api/get-image/<filename>, which searches every dataset
     # and whose random 32-hex-digit filenames are only revealed by the refused
     # listing routes.
-    open_blueprints = {"auth", "home_datasets"}
+    open_blueprints = {"auth", "home_datasets", "submissions"}
     open_endpoints = {"get_datasets", "images.get_image"}
 
     @app.before_request
@@ -191,6 +192,7 @@ def create_app(test_config=None):
     app.register_blueprint(location_photos_bp)
     app.register_blueprint(display_list_bp)
     app.register_blueprint(home_datasets_bp)
+    app.register_blueprint(submissions_bp)
     app.register_blueprint(flight_times_bp)
 
     return app

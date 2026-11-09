@@ -1,6 +1,14 @@
 /**
  * EditableContent renders the markdown body of a static page (About/Resources/Contact)
  * and, for logged-in admins, lets it be edited and saved in place.
+ *
+ * specialSection optionally hands one section of the page to a custom
+ * renderer instead of plain markdown: { heading, render }. The section runs
+ * from the first heading whose text contains `heading` up to the next heading
+ * of the same or a higher level; render(html, markdown) gets that section.
+ * It's matched by heading text, so admins can still edit the section's words
+ * as long as they keep its heading. If no heading matches, the page renders
+ * as plain markdown.
  */
 import { useState, useEffect, useContext, useRef } from "react";
 import { marked } from "marked";
@@ -10,7 +18,21 @@ import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
 import { highlightGlossaryInHtml } from "../utils/highlightGlossaryInHtml";
 
-export function EditableContent({ page, dataset, linkGlossary = false }) {
+// splitSection splits markdown into [before, section, after] around the first
+// heading containing headingText (see specialSection above), or returns null.
+function splitSection(markdown, headingText) {
+  const lines = markdown.split("\n");
+  const needle = headingText.toLowerCase();
+  const start = lines.findIndex(line => /^#{1,6}\s/.test(line) && line.toLowerCase().includes(needle));
+  if (start === -1) return null;
+  const level = lines[start].match(/^#+/)[0].length;
+  let end = lines.findIndex((line, i) => i > start && /^#{1,6}\s/.test(line) && line.match(/^#+/)[0].length <= level);
+  if (end === -1) end = lines.length;
+  const join = part => part.join("\n");
+  return [join(lines.slice(0, start)), join(lines.slice(start, end)), join(lines.slice(end))];
+}
+
+export function EditableContent({ page, dataset, linkGlossary = false, specialSection = null }) {
   const { admin } = useContext(AdminContext);
   const [content, setContent] = useState("");
   const [draft, setDraft] = useState("");
@@ -118,8 +140,8 @@ export function EditableContent({ page, dataset, linkGlossary = false }) {
   // (see handleImageFileChange) — but leave any other absolute URL untouched.
   const resolveImagePaths = text => text.replaceAll("](/api/get-image/", `](${import.meta.env.VITE_BACKEND_URL}/api/get-image/`);
 
-  const renderedHtml = () => {
-    const sanitized = DOMPurify.sanitize(marked.parse(resolveImagePaths(content)));
+  const toHtml = markdown => {
+    const sanitized = DOMPurify.sanitize(marked.parse(resolveImagePaths(markdown)));
     return linkGlossary ? highlightGlossaryInHtml(sanitized, glossaryTerms) : sanitized;
   };
 
@@ -184,10 +206,23 @@ export function EditableContent({ page, dataset, linkGlossary = false }) {
           <Pencil size={14} /> Edit
         </button>
       )}
-      <div
-        className="max-w-none prose prose-headings:font-serif"
-        dangerouslySetInnerHTML={{ __html: renderedHtml() }}
-      />
+      {renderBody()}
     </div>
   );
+
+  function renderBody() {
+    const proseClass = "max-w-none prose prose-headings:font-serif";
+    const parts = specialSection && splitSection(content, specialSection.heading);
+    if (!parts) {
+      return <div className={proseClass} dangerouslySetInnerHTML={{ __html: toHtml(content) }} />;
+    }
+    const [before, section, after] = parts;
+    return (
+      <>
+        {before.trim() && <div className={proseClass} dangerouslySetInnerHTML={{ __html: toHtml(before) }} />}
+        {specialSection.render(toHtml(section), section)}
+        {after.trim() && <div className={proseClass} dangerouslySetInnerHTML={{ __html: toHtml(after) }} />}
+      </>
+    );
+  }
 }

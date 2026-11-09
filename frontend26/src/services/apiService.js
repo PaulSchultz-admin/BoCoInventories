@@ -361,7 +361,8 @@ const apiService = {
   // scoped to a dataset (butterflies/dragonflies/wildflowers each have their own copy).
   getPageContent: async (page, dataset = "butterflies") => {
     try {
-      const response = await api.get(`/api/page-content/${page}?dataset=${dataset}`);
+      // Auth headers too, so an admin can read admin-only pages (copyright-info).
+      const response = await api.get(`/api/page-content/${page}?dataset=${dataset}`, { headers: authHeaders() });
       return response.data;
     } catch (error) {
       handleError(error);
@@ -396,6 +397,42 @@ const apiService = {
       handleError(error);
     }
   },
+
+  // submitPhoto sends a public photo submission (see backend routes/submissions.py).
+  // formData holds the photo, contributor details, and the agreement text agreed to.
+  submitPhoto: async formData => {
+    try {
+      const response = await api.post("/api/submissions/", formData);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // getSubmissions lists photo submissions, newest first. Admin only.
+  getSubmissions: async () => {
+    try {
+      const response = await api.get("/api/submissions/", { headers: authHeaders() });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // deleteSubmission removes a photo submission and its file. Admin only.
+  deleteSubmission: async id => {
+    try {
+      const response = await api.delete(`/api/submissions/${id}`, { headers: authHeaders() });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // submissionPhotoUrl is a submission's photo URL for an <img> tag, which
+  // can't send headers, so the admin token rides along as a query param.
+  submissionPhotoUrl: id =>
+    `${BASE_URL}/api/submissions/${id}/photo?admin_token=${encodeURIComponent(localStorage.getItem("admin_token") || "")}`,
 
   // getGlossaryTerms returns all glossary terms for a dataset, sorted alphabetically.
   getGlossaryTerms: async (dataset = "butterflies") => {

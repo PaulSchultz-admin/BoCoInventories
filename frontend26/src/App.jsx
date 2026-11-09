@@ -9,6 +9,8 @@ import { Info } from "./pages/Info";
 import { About } from "./pages/About";
 import { Resources } from "./pages/Resources";
 import { Contact } from "./pages/Contact";
+import { Copyright } from "./pages/Copyright";
+import { COPYRIGHT_PAGES } from "./data/copyrightPages";
 import { Glossary } from "./pages/Glossary";
 import { Home } from "./pages/Home";
 import { Parks } from "./pages/Parks";
@@ -21,6 +23,7 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "about", element: <About dataset="home" heroImage="/home-hero.jpg" /> },
       { path: "contact", element: <Contact dataset="home" heroImage="/home-hero.jpg" /> },
+      ...COPYRIGHT_PAGES.map(c => ({ path: `copyright/${c.path}`, element: <Copyright key={c.page} {...c} /> })),
       { path: "parks", element: <Parks /> }
     ]
   },

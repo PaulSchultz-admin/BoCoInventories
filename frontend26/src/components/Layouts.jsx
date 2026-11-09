@@ -13,6 +13,8 @@ import { BatDB } from "../pages/WildlifeDBs/BatDB";
 import { RaptorDB } from "../pages/WildlifeDBs/RaptorDB";
 import { DamselflyDB } from "../pages/WildlifeDBs/DamselflyDB";
 import { ButterflyMoreDB } from "../pages/WildlifeDBs/ButterflyMoreDB";
+import { COPYRIGHT_PAGES } from "../data/copyrightPages";
+import { ChevronDown } from "lucide-react";
 import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 import { WildflowerMoreDB } from "../pages/WildlifeDBs/WildflowerMoreDB";
 
@@ -85,12 +87,64 @@ export const HomeLayout = () => {
           {pathname !== "/" ? <Link to="/" className={linkClass}>Home</Link> : <span />}
           <div className="flex gap-8">
             <NavLink to="/about" className={linkClass}>About</NavLink>
+            <CopyrightsMenu linkClass={linkClass} />
             <NavLink to="/contact" className={linkClass}>Contact</NavLink>
           </div>
         </nav>
         <Outlet />
       </main>
       <Footer hideBcna />
+    </div>
+  );
+};
+
+// CopyrightsMenu is the home nav's Copyrights dropdown. It opens on hover
+// (desktop) or click (touch). Admin-only entries stay listed but grayed out
+// and unclickable until an admin logs in.
+const CopyrightsMenu = ({ linkClass }) => {
+  const { admin } = useContext(AdminContext);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`${linkClass} flex items-center gap-1 cursor-pointer`}
+      >
+        Copyrights
+        <ChevronDown size={14} strokeWidth={2} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 pt-2 top-full w-64" role="menu">
+          <div className="flex flex-col p-2 bg-white border border-gray-100 shadow-lg rounded-xl">
+            {COPYRIGHT_PAGES.map(c =>
+              c.adminOnly && !admin ? (
+                <span
+                  key={c.page}
+                  role="menuitem"
+                  aria-disabled="true"
+                  title="Admin login required"
+                  className="px-3 py-2 font-sans text-sm rounded-lg cursor-not-allowed text-sand-300"
+                >
+                  {c.label}
+                </span>
+              ) : (
+                <Link
+                  key={c.page}
+                  to={`/copyright/${c.path}`}
+                  onClick={() => setOpen(false)}
+                  role="menuitem"
+                  className="px-3 py-2 font-sans text-sm transition-colors rounded-lg text-sand-600 hover:bg-sand-50 hover:text-sand-800"
+                >
+                  {c.label}
+                </Link>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,7 +8,8 @@ Unlike wildlife.py, mutations here require a valid admin token (see auth.py)
 sent as `Authorization: Bearer <token>`.
 
 Routes include:
-    - GET /api/page-content/<page>: Retrieve a page's markdown body
+    - GET /api/page-content/<page>: Retrieve a page's markdown body (admin only
+      for ADMIN_ONLY_PAGES)
     - PUT /api/page-content/<page>: Replace a page's markdown body (admin only)
     - POST /api/content-images/: Upload an image to embed in page content (admin only)
     - GET /api/glossary/: List all glossary terms, alphabetically
@@ -21,7 +22,7 @@ import os
 import sqlite3
 from flask import Blueprint, request, jsonify
 from app import db_helpers
-from app.content_defaults import VALID_PAGES
+from app.content_defaults import VALID_PAGES, ADMIN_ONLY_PAGES
 from app.routes.auth import is_valid_token
 from app.utils import save_file
 
@@ -54,6 +55,11 @@ def get_page_content(page):
     """
     if page not in VALID_PAGES:
         return jsonify({"error": f"Unknown page '{page}'"}), 404
+
+    if page in ADMIN_ONLY_PAGES:
+        auth_error = _require_admin()
+        if auth_error:
+            return auth_error
 
     conn = db_helpers.get_connection()
     row = conn.execute(

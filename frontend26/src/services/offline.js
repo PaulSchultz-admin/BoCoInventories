@@ -16,7 +16,7 @@ const META_KEY = "/__offline_meta__";
 const CONCURRENCY = 6;
 // Pages each dataset has (EditableContent's `page` values), plus the home ones.
 const DATASET_PAGES = ["about", "resources", "info", "glossary"];
-const HOME_PAGES = ["about", "contact"];
+const HOME_PAGES = ["about", "contact", "copyright-policy", "copyright-submissions"];
 // Datasets whose photos are saved as the backend's low-resolution copies
 // (max 1000 px, see backend/app/offline_images.py) instead of full size.
 const LOW_RES_DATASETS = new Set(["wildflowers"]);
