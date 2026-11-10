@@ -70,19 +70,15 @@ export const Footer = ({ hideBcna: forceHideBcna = false }) => {
 
         {/* Legal & Credits Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs tracking-wide text-sand-500 uppercase">
-          <p>
-            © 2026
-            {!hideBcna && (
-              <>
-                {" "}
-                <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="hover:text-sand-800 transition-colors">
-                  Boulder County Nature Association
-                </a>
-              </>
-            )}
-          </p>
+          {!hideBcna && (
+            <p>
+              <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="hover:text-sand-800 transition-colors">
+                Boulder County Nature Association
+              </a>
+            </p>
+          )}
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 md:ml-auto">
             <p>
               Site by{" "}
               <a href="https://blueprintboulder.org/" target="_blank" rel="noopener noreferrer" className="hover:text-sand-800 transition-colors font-semibold">
