@@ -42,7 +42,6 @@ USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
-DEFAULT_COPYRIGHT = "Boulder County Nature Association"
 
 # Full species manifest: (url slug, taxonomic family in Latin), extracted from
 # https://coloradofrontrangebutterflies.com/butterfly-families/ by mapping each
@@ -390,7 +389,7 @@ def import_species(cur, category_id, field_ids, slug, family_latin):
             print(f"    ! failed to download {image['full_url']}: {e}")
             continue
 
-        copyright_value = image["credit"] or DEFAULT_COPYRIGHT
+        copyright_value = image["credit"] or ""
         cur.execute(
             """INSERT INTO Images
                (wildlife_id, image_path, metadata, copyright, date_taken, location_taken)

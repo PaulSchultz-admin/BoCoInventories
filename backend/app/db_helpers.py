@@ -377,6 +377,10 @@ def _seed_site_content(conn):
 # About/Contact content (PageContent), so it has no species entries.
 EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers", "lichens", "bats", "raptors", "parks", "home"]
 
+# Folders under data/ that aren't datasets, so they never get a dataset
+# database.db or show up as a ?dataset= option (see routes/submissions.py).
+NON_DATASET_FOLDERS = {"submissions"}
+
 
 def init_all_dbs():
     """Initialize schema and seed the 'family' field for every dataset database."""
@@ -392,7 +396,7 @@ def init_all_dbs():
         os.makedirs(os.path.join(dataset_dir, "uploaded_images"), exist_ok=True)
 
     for entry in os.scandir(DATA_FOLDER):
-        if not entry.is_dir():
+        if not entry.is_dir() or entry.name in NON_DATASET_FOLDERS:
             continue
         db_path = os.path.join(entry.path, "database.db")
         logger.debug(f"Initializing database for dataset '{entry.name}': {db_path}")

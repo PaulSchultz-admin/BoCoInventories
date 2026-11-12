@@ -103,7 +103,7 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
           <label className="block mb-1 font-bold text-pink-900">Photographer</label>
           <input
             type="text"
-            placeholder="Defaults to the photo's EXIF data, or Boulder County Nature Association"
+            placeholder="Defaults to the photo's EXIF data, if any"
             value={copyright}
             onChange={e => setCopyright(e.target.value)}
             className="w-full px-3 py-2 text-gray-700 border border-pink-200 rounded-lg placeholder:text-gray-300 focus:outline-none focus:border-pink-500"
@@ -288,7 +288,7 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose, backL
         {(matchedImage?.metadata?.model || matchedImage?.metadata?.make) && (
           <p>{(matchedImage.metadata.model || matchedImage.metadata.make).trim()}</p>
         )}
-        <p className="">Photo: {matchedImage?.copyright || "Boulder County Nature Association"}</p>
+        {matchedImage?.copyright && <p>Photo: {matchedImage.copyright}</p>}
         {images.length > 1 && <p className="mt-1 text-xs text-white/60">Photo {index + 1} of {images.length}</p>}
       </div>
       {backLabel && (

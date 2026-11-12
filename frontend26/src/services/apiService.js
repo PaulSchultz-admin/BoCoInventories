@@ -194,8 +194,8 @@ const apiService = {
   },
 
   // saveImage uploads a new image for a wildlife entry, including optional metadata.
-  // If copyright is omitted, the backend defaults to the image's EXIF copyright
-  // tag, then to "Boulder County Nature Association".
+  // If copyright is omitted, the backend uses the image's EXIF copyright tag,
+  // or leaves it blank.
   saveImage: async (
     wildlifeId,
     imageFile,

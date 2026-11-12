@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 images_bp = Blueprint("images", __name__)
 
-DEFAULT_COPYRIGHT = "Boulder County Nature Association"
 
 
 def normalize(value):
@@ -163,10 +162,10 @@ def add_image():
         logger.debug(f"Extracted EXIF data: {json.dumps(exif_dict)}")
 
     # Copyright defaults to a hand-entered value, then the image's EXIF
-    # copyright tag, then the organization's name.
+    # copyright tag, otherwise blank (no credit is assumed).
     # Some cameras fill an unset copyright tag with NUL bytes, which isn't a name.
     exif_copyright = str(exif_dict.get("copyright", "")).strip(" \x00")
-    copyright_value = manual_copyright or exif_copyright or DEFAULT_COPYRIGHT
+    copyright_value = manual_copyright or exif_copyright
 
     # Date taken defaults to a hand-entered value, then the image's EXIF
     # "date taken" (DateTimeOriginal) tag, falling back to the modify-date
@@ -272,7 +271,7 @@ def replace_image(image_id):
     if copyright_value is not None:
         db_helpers.update(
             "UPDATE Images SET copyright = ? WHERE id = ?",
-            (copyright_value.strip() or DEFAULT_COPYRIGHT, image_id),
+            (copyright_value.strip(), image_id),
         )
 
     if date_taken_value is not None:

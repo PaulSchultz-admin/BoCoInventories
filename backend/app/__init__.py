@@ -12,6 +12,7 @@ from app.routes.location_photos import location_photos_bp
 from app.routes.display_list import display_list_bp
 from app.routes.home_datasets import home_datasets_bp, read_disabled
 from app.routes.submissions import submissions_bp
+from app.db_helpers import NON_DATASET_FOLDERS
 from app.routes.flight_times import flight_times_bp
 from app import admin_sessions
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -43,7 +44,7 @@ def _discover_dataset_configs(base_dir: str) -> dict[str, dict[str, str]]:
     dataset_configs: dict[str, dict[str, str]] = {}
 
     for entry in os.scandir(base_dir):
-        if not entry.is_dir():
+        if not entry.is_dir() or entry.name in NON_DATASET_FOLDERS:
             continue
         db_path = os.path.join(entry.path, "database.db")
         if not os.path.isfile(db_path):
