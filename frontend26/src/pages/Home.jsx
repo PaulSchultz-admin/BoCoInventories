@@ -54,6 +54,14 @@ export const Home = () => {
         >
           <div className="absolute inset-0 bg-black/15" />
         </div>
+        {/* Same size and right edge as the dataset pages' heroQr (see
+            WildlifeDB.jsx), but lower: here the hero's top-right corner holds
+            HomeLayout's About/Contact links. */}
+        <img
+          src="/home-qr.png"
+          alt="QR code linking to the Boulder County Inventories home page"
+          className="absolute z-10 w-24 h-24 rounded-lg shadow-lg right-4 top-16 md:w-32 md:h-32 md:right-6 md:top-18"
+        />
         <div className="relative z-10 flex h-full items-center px-[8%]">
           <h1 className="font-[Cormorant_Garamond] italic text-5xl lg:text-7xl font-semibold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
             Boulder County Inventories
