@@ -10,6 +10,8 @@ Supported datasets (see DATASETS):
 
   - wildflowers: bloom times. The species list comes from the database, and
     the CSV is entirely generated.
+  - butterflies: flight times, the same way (superseding the chart first
+    hand-digitized from a BCNA field guide).
   - dragonflies: flight times. The species list (and Family, Start, End) come
     from the existing CSV, hand-entered from Ann Cooper's field guide. Those
     columns are kept for reference, but the app only uses the zone ranges: a
@@ -89,6 +91,14 @@ DATASETS = {
         # Plant Phenology: Flowering / Fruiting, No Flowers or Fruits.
         "keep": {(12, 13)},
         "drop": {(12, 14), (12, 21)},
+        "fields": ["Family", "Species", *ZONES, *GENERATED_FIELDS],
+    },
+    "butterflies": {
+        "species_from": "database",
+        "basis": "adult",
+        # Life Stage: Adult / Pupa, Larva, Egg.
+        "keep": {(1, 2)},
+        "drop": {(1, 4), (1, 6), (1, 7)},
         "fields": ["Family", "Species", *ZONES, *GENERATED_FIELDS],
     },
     "dragonflies": {
@@ -284,6 +294,14 @@ def main():
     # (common name, scientific name or None, family) for each species.
     if config["species_from"] == "database":
         species = sorted(database.values())
+        # The CSV is generated entirely from the database, so rows for species
+        # no longer in it go, and the rest are keyed by the database's spelling
+        # of the name (e.g. a curly apostrophe), which new rows use.
+        rows = {
+            database[normalize_name(name)][0]: {**row, "Species": database[normalize_name(name)][0]}
+            for name, row in rows.items()
+            if normalize_name(name) in database
+        }
     else:
         species = [
             (row["Species"], (database.get(normalize_name(row["Species"])) or (None, None))[1], row["Family"])
@@ -300,6 +318,13 @@ def main():
     # held to 1 request/second by get_json). Finished species are written in
     # order as their elevations come back.
     pending = []
+
+    def skip(name, reason):
+        print(f"SKIP  {name}: {reason}")
+        # A generated CSV mustn't keep an older row (or another source's) for
+        # a species iNat has nothing for now; a hand-entered one keeps it.
+        if config["species_from"] == "database" and rows.pop(name, None) and not args.dry_run:
+            write_csv(csv_path, config["fields"], rows)
 
     def finish(name, family, taxon_id, observations, basis, elevations_future):
         by_zone = {zone: [] for zone in ZONES}
@@ -327,12 +352,12 @@ def main():
             if scientific_name:
                 taxon = find_taxon(scientific_name)
                 if not taxon:
-                    print(f"SKIP  {name}: no iNat taxon for '{scientific_name}'")
+                    skip(name, f"no iNat taxon for '{scientific_name}'")
                     continue
             else:
                 taxon = find_taxon_by_common_name(name)
                 if not taxon:
-                    print(f"SKIP  {name}: not in the database, and no iNat species by that common name")
+                    skip(name, "not in the database, and no iNat species by that common name")
                     continue
             taxon_id, inat_name = taxon
             if not scientific_name:
@@ -342,7 +367,7 @@ def main():
 
             observations, basis = choose_observations(fetch_observations(taxon_id), config)
             if not observations:
-                print(f"SKIP  {name}: no Boulder County observations")
+                skip(name, "no Boulder County observations")
                 continue
 
             points = [(lat, lng) for _, lat, lng, _ in observations]

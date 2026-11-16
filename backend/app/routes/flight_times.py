@@ -8,10 +8,9 @@ file. Two CSV shapes are supported:
     - Zoned (butterflies, wildflowers): Family, Species, Alpine, Montane,
       Foothills, Plains, where each zone cell holds MM-DD day ranges like
       "06-01 to 08-31", comma-separated when a species has a gap (e.g.
-      "03-01 to 03-31, 06-01 to 08-31"). Butterflies' were hand-digitized
-      from a BCNA field guide chart at month resolution (so they run from
-      the 1st of the first month to the end of the last); wildflowers' are
-      built from iNaturalist data by scripts/build_flight_times.py.
+      "03-01 to 03-31, 06-01 to 08-31"). Both are built from iNaturalist
+      data by scripts/build_flight_times.py (butterflies' replaced a chart
+      hand-digitized from a BCNA field guide).
     - Dated: Family, Species, Start, End, where Start/End are MM-DD days of
       the year. No life zones.
 
