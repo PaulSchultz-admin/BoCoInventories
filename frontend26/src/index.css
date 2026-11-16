@@ -43,6 +43,15 @@ html {
   border-radius: 4px;
 }
 
+/* GlossaryTerm's definition box. Plain CSS rather than Tailwind's
+   group-hover, which only applies under @media (hover: hover), so browsers
+   and devices that report no hover (e.g. many touchscreen laptops) never
+   showed it. Focus (tapping or tabbing to a term) opens it too. */
+.glossary-hint:hover > .glossary-hint-text,
+.glossary-hint:focus > .glossary-hint-text {
+  display: block;
+}
+
 body {
   margin: 0;
   font-family:
