@@ -38,20 +38,31 @@ const median = values => {
   return sorted[Math.floor(sorted.length / 2)];
 };
 
-// loadParkSites resolves to {parkName: {taxa, zone}} for every park with a
-// pin: taxa is the Set of iNaturalist taxon IDs seen within NEAR_KM of it, and
-// zone is the life zone of the median elevation of those sightings (whose
-// flight calendar the park uses), or "All" if nothing has been seen there.
+// The grids' "Expected on a date" filter offers only the MAX_SITES parks with
+// the most sightings within NEAR_KM (with All, that's seven choices).
+export const MAX_SITES = 6;
+
+// loadParkSites resolves to {parkName: {taxa, zone}} for the MAX_SITES parks
+// with the most sightings near their pins: taxa is the Set of iNaturalist
+// taxon IDs seen within NEAR_KM of the park, and zone is the life zone of the
+// median elevation of those sightings (whose flight calendar the park uses).
 export async function loadParkSites() {
   const [data, parks] = await Promise.all([loadOdonataSightings(), loadParks()]);
+  const counted = parks
+    .filter(park => park.latitude != null)
+    .map(park => ({
+      park,
+      near: data.sightings.filter(s => kmBetween(park.latitude, park.longitude, s[LAT], s[LNG]) <= NEAR_KM)
+    }))
+    .filter(({ near }) => near.length > 0)
+    .sort((a, b) => b.near.length - a.near.length || a.park.name.localeCompare(b.park.name))
+    .slice(0, MAX_SITES);
   const sites = {};
-  for (const park of parks) {
-    if (park.latitude == null) continue;
-    const near = data.sightings.filter(s => kmBetween(park.latitude, park.longitude, s[LAT], s[LNG]) <= NEAR_KM);
-    const ft = near.length ? median(near.map(s => s[FT])) : null;
+  for (const { park, near } of counted) {
+    const ft = median(near.map(s => s[FT]));
     sites[park.name] = {
       taxa: new Set(near.map(s => s[SPECIES]).filter(Boolean)),
-      zone: ft == null ? "All" : ZONE_FLOORS_FT.find(([, floor]) => ft >= floor)[0]
+      zone: ZONE_FLOORS_FT.find(([, floor]) => ft >= floor)[0]
     };
   }
   return sites;
