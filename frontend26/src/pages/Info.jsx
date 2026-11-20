@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { EditableContent } from "../components/EditableContent";
 import { sites } from "../data/sites";
+import { OdonataHeatMap } from "../components/OdonataHeatMap";
 
 export const Info = () => {
   const { category } = useParams();
@@ -22,6 +23,7 @@ export const Info = () => {
       {/* Main Content */}
       <div className="max-w-[1183px] px-5 mt-14 mb-20 mx-auto">
         <EditableContent page="info" dataset={category} linkGlossary />
+        {site.id === "dragonflies" && <OdonataHeatMap />}
       </div>
     </div>
   );

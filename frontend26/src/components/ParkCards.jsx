@@ -12,33 +12,8 @@ import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
-import { parkLocation, signPhoto } from "../utils/parkLocation";
+import { loadParks } from "../utils/parkLocation";
 import { ParksMap } from "./ParksMap";
-
-const IMAGE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/get-image/`;
-
-// loadParks builds the list from the parks dataset: each entry with its sign
-// photo and map location.
-async function loadParks() {
-  const entries = (await apiService.getAllWildlife("parks")) || [];
-  const parks = await Promise.all(
-    entries.map(async entry => {
-      const images = (await apiService.getImagesByWildlifeId(entry.id, "parks")) || [];
-      const sign = signPhoto(images, entry.thumbnail_id);
-      const fields = {};
-      ["Latitude", "Longitude"].forEach(name => {
-        fields[name] = entry.field_values?.find(f => f.name === name)?.value ?? "";
-      });
-      return {
-        id: entry.id,
-        name: entry.name,
-        image: sign ? `${IMAGE_URL}${sign.image_path}` : null,
-        ...parkLocation(fields, sign)
-      };
-    })
-  );
-  return parks.sort((a, b) => a.name.localeCompare(b.name));
-}
 
 export const ParkCards = () => {
   const navigate = useNavigate();
