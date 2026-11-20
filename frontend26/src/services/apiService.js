@@ -550,6 +550,17 @@ const apiService = {
     }
   },
 
+  // getFlightCalendarIds returns the IDs of the dataset's species that have a
+  // flight calendar (a life-zone range in its flight_times.csv).
+  getFlightCalendarIds: async (dataset = "butterflies") => {
+    try {
+      const response = await api.get(`/api/flight-calendar-ids/?dataset=${dataset}`);
+      return response.data?.wildlife_ids ?? [];
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // getLocationPhotos returns the geotagged photos shown as pins on the inset map.
   getLocationPhotos: async (dataset = "butterflies") => {
     try {

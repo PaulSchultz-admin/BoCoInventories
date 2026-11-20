@@ -5,6 +5,9 @@
 // A site with `hideBcna: true` gets no BCNA branding (Footer logo/name/links,
 // hero "BCNA nature photo inventory" credit) on its own page — meant to be
 // temporary, so just remove the flag when it's ready to carry BCNA branding.
+// A site with `requireFlightCalendar: true` hides species without a flight
+// calendar (no life-zone range in its flight_times.csv) from visitors; admins
+// still see them.
 export const sites = [
   {
     id: "butterflies",
@@ -13,7 +16,8 @@ export const sites = [
     heroImage: "/butterfly-hero.png",
     label: "Butterflies",
     hoverBg: "hover:bg-[#e2f2e7]",
-    hideBcna: true
+    hideBcna: true,
+    requireFlightCalendar: true
   },
   {
     id: "dragonflies",

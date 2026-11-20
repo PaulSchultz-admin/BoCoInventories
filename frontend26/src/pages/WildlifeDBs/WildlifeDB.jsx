@@ -153,7 +153,10 @@ function todayIso() {
 // with date/zone inputs that appear once it's checked. Shared between the
 // desktop sidebar and the mobile filters modal. Datasets whose flight times
 // aren't broken out by life zone (showZone false) get only the date input.
-function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, showZone = true }) {
+// With sites (a list of place names), the zone input becomes a Location
+// input offering All and those places instead.
+function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, showZone = true, sites = null }) {
+  const options = sites ? ["All", ...sites] : FLIGHT_ZONES;
   return (
     <div className="pt-3 mt-3 border-t border-sand-200">
       <label className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer text-sand-600 hover:bg-sand-200 transition-colors select-none">
@@ -182,14 +185,14 @@ function FlightTimeFilter({ enabled, setEnabled, date, setDate, zone, setZone, s
           {showZone && (
             <label className="flex flex-col gap-1">
               <span className="font-['Montserrat',sans-serif] text-[10px] font-semibold tracking-widest uppercase text-sand-300">
-                Life zone
+                {sites ? "Location" : "Life zone"}
               </span>
               <select
                 value={zone}
                 onChange={e => setZone(e.target.value)}
                 className="font-serif text-sm px-2 py-1 rounded border border-sand-200 bg-white outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
               >
-                {FLIGHT_ZONES.map(z => (
+                {options.map(z => (
                   <option key={z} value={z}>
                     {z}
                   </option>
@@ -486,6 +489,7 @@ export function WildlifeDB({
   extraLinks = [],
   showFlightTimeFilter = false,
   flightTimeZones = true,
+  flightSites = null,
   offlineDownload = false
 }) {
   const hideBcna = sites.find(s => s.id === type)?.hideBcna ?? false;
@@ -496,7 +500,7 @@ export function WildlifeDB({
   const filterKey = familySplit && moreView ? `${type}:more` : type;
   const savedFilters = loadFilterState(filterKey);
   const [search, setSearch] = useState(savedFilters?.search ?? "");
-  const [wildlife, setWildlife] = useState([]);
+  const [allWildlife, setAllWildlife] = useState([]);
   const [openFamilies, setOpenFamilies] = useState(savedFilters?.openFamilies ?? new Set());
   const [selectedGenera, setSelectedGenera] = useState(savedFilters?.selectedGenera ?? new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -507,7 +511,54 @@ export function WildlifeDB({
   const [flightDate, setFlightDate] = useState(savedFilters?.flightDate ?? todayIso());
   const [flightZone, setFlightZone] = useState(savedFilters?.flightZone ?? "All");
   const [expectedIds, setExpectedIds] = useState(null); // null = filter inactive/not loaded
+  // flightSites (a loader resolving to {placeName: {taxa, zone}}) swaps the
+  // filter's life zones for All and those places, listed A to Z: a species is
+  // expected at a place if it's expected in the place's zone on the date and
+  // has been seen there (taxa is a Set of iNaturalist taxon IDs); All is
+  // every species expected anywhere, in any zone. The places load once the
+  // filter is turned on. flightPlace is the chosen place, or All if the saved
+  // choice is a life zone or, once they've loaded, isn't one of the places.
+  const [siteData, setSiteData] = useState(null);
+  useEffect(() => {
+    if (!flightSites || !flightFilterEnabled || siteData) return;
+    flightSites()
+      .then(setSiteData)
+      .catch(() => setSiteData({}));
+  }, [flightSites, flightFilterEnabled, siteData]);
+  const siteNames = useMemo(
+    () => (siteData ? Object.keys(siteData).sort((a, b) => a.localeCompare(b)) : []),
+    [siteData]
+  );
+  const flightPlace = !flightSites
+    ? flightZone
+    : flightZone === "All" || FLIGHT_ZONES.includes(flightZone) || (siteData && !siteData[flightZone])
+      ? "All"
+      : flightZone;
+  const atSite = flightSites != null && flightPlace !== "All";
+  // While the places load, a saved place is listed on its own so it stays shown.
+  const siteOptions = siteData || !atSite ? siteNames : [flightPlace];
   const { admin } = useContext(AdminContext);
+  // calendarIds is the set of species with a flight calendar, for a site with
+  // requireFlightCalendar (see data/sites.js); null until loaded.
+  const requireFlightCalendar = sites.find(s => s.id === type)?.requireFlightCalendar ?? false;
+  const [calendarIds, setCalendarIds] = useState(null);
+  useEffect(() => {
+    if (!requireFlightCalendar) return;
+    apiService
+      .getFlightCalendarIds(type)
+      .then(ids => setCalendarIds(new Set(ids ?? [])))
+      .catch(() => setCalendarIds(new Set()));
+  }, [type, requireFlightCalendar]);
+  // Visitors only see species with a card photo (a thumbnail) and, on such a
+  // site, a flight calendar, so the grid, search, filters and counts skip the
+  // rest. Admins see every species so they can fill them in.
+  const wildlife = useMemo(() => {
+    if (admin) return allWildlife;
+    if (requireFlightCalendar && calendarIds === null) return [];
+    return allWildlife.filter(
+      w => w.thumbnail_id != null && (!requireFlightCalendar || calendarIds.has(w.id))
+    );
+  }, [admin, allWildlife, requireFlightCalendar, calendarIds]);
   // Matches Tailwind's md breakpoint, where the desktop sidebar appears.
   const isDesktop = useMediaQuery("(min-width: 48rem)");
 
@@ -520,12 +571,19 @@ export function WildlifeDB({
       setExpectedIds(null);
       return;
     }
+    if (atSite && !siteData) return; // wait for the places' species
     let cancelled = false;
     apiService
-      .getExpectedWildlife(type, flightDate, flightZone)
+      .getExpectedWildlife(type, flightDate, atSite ? siteData[flightPlace].zone : flightPlace)
       .then(data => {
         if (cancelled) return;
-        const ids = new Set((data?.species ?? []).map(s => s.wildlife_id).filter(id => id != null));
+        const seen = atSite ? siteData[flightPlace].taxa : null;
+        const ids = new Set(
+          (data?.species ?? [])
+            .filter(s => !seen || seen.has(s.inat_taxon))
+            .map(s => s.wildlife_id)
+            .filter(id => id != null)
+        );
         setExpectedIds(ids);
       })
       .catch(() => {
@@ -534,7 +592,7 @@ export function WildlifeDB({
     return () => {
       cancelled = true;
     };
-  }, [showFlightTimeFilter, flightFilterEnabled, flightDate, flightZone, type]);
+  }, [showFlightTimeFilter, flightFilterEnabled, flightDate, flightPlace, atSite, siteData, type]);
 
   // Load the "common" species list when this dataset opts into the main/More split.
   useEffect(() => {
@@ -607,7 +665,7 @@ export function WildlifeDB({
     const fetchData = async () => {
       try {
         const data = await apiService.getAllWildlife(type);
-        setWildlife(Object.values(data));
+        setAllWildlife(Object.values(data));
       } catch (error) {
         console.error("Error fetching wildlife data:", error);
       }
@@ -841,9 +899,10 @@ export function WildlifeDB({
                   setEnabled={setFlightFilterEnabled}
                   date={flightDate}
                   setDate={setFlightDate}
-                  zone={flightZone}
+                  zone={flightPlace}
                   setZone={setFlightZone}
                   showZone={flightTimeZones}
+                  sites={flightSites ? siteOptions : null}
                 />
               )}
             </aside>
@@ -1049,9 +1108,10 @@ export function WildlifeDB({
                     setEnabled={setFlightFilterEnabled}
                     date={flightDate}
                     setDate={setFlightDate}
-                    zone={flightZone}
+                    zone={flightPlace}
                     setZone={setFlightZone}
                     showZone={flightTimeZones}
+                    sites={flightSites ? siteOptions : null}
                   />
                 )}
               </div>

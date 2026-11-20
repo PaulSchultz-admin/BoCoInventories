@@ -21,6 +21,7 @@ kept for reference but not used.
 
 Routes include:
     - GET /api/expected-wildlife/: List species expected on a date, in a zone
+    - GET /api/flight-calendar-ids/: List the Wildlife IDs that have a flight calendar
 """
 
 import csv
@@ -81,6 +82,67 @@ def _normalize_dataset_name(name):
     return name.strip().lower().replace(" ", "_")
 
 
+def normalize_name(name):
+    """Normalizes a species name for matching flight_times.csv rows to the
+    Wildlife table: apostrophe, hyphen and space style (the CSV uses plain
+    ASCII; scraped DB names sometimes use curly quotes, non-breaking hyphens or
+    non-breaking spaces) and case, since otherwise e.g. "Weidemeyer's Admiral"
+    wouldn't match "Weidemeyer’s Admiral"."""
+    return name.lower().replace("’", "'").replace("‑", "-").replace("\xa0", " ")
+
+
+def _taxon_id(row):
+    """A flight_times.csv row's iNaturalist taxon ID as an int, or None."""
+    try:
+        return int(row.get("iNat Taxon") or "")
+    except ValueError:
+        return None
+
+
+def _flight_times_path(dataset):
+    return os.path.join(db_helpers.DATA_FOLDER, _normalize_dataset_name(dataset), "flight_times.csv")
+
+
+@flight_times_bp.route("/api/flight-calendar-ids/", methods=["GET"])
+def flight_calendar_ids():
+    """
+    Lists the IDs of a dataset's Wildlife entries that have a flight calendar:
+    a flight_times.csv row with a date range in at least one life zone (the
+    ranges built from iNaturalist data by scripts/build_flight_times.py). A
+    species missing from the CSV, or whose row has every zone blank (too few
+    iNaturalist records), has none. Only zoned CSVs are supported.
+
+    Example request:
+    GET /api/flight-calendar-ids/?dataset=butterflies
+
+    Example output:
+    {"wildlife_ids": [1, 2, 5, 8]}
+    """
+    dataset = request.args.get("dataset")
+    if not dataset:
+        return jsonify({"error": "dataset is required"}), 400
+    csv_path = _flight_times_path(dataset)
+    if not os.path.isfile(csv_path):
+        return jsonify({"error": f"No flight_times.csv for dataset '{dataset}'"}), 404
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        if not any(z in (reader.fieldnames or []) for z in ZONE_COLUMNS):
+            return jsonify({"error": f"flight_times.csv for '{dataset}' has no life zones"}), 404
+        names = {
+            normalize_name(row["Species"])
+            for row in reader
+            if any(parse_day_ranges(row.get(z, "")) for z in ZONE_COLUMNS)
+        }
+
+    ids = [
+        w["id"]
+        for w in db_helpers.select_multiple("SELECT id, name FROM Wildlife")
+        if normalize_name(w["name"]) in names
+    ]
+    return jsonify({"wildlife_ids": sorted(ids)}), 200
+
+
 @flight_times_bp.route("/api/expected-wildlife/", methods=["GET"])
 def expected_wildlife():
     """
@@ -112,6 +174,7 @@ def expected_wildlife():
                 "zones": ["Plains"],
                 "zone_periods": {"Plains": "Jun 1 – Sep 30"},
                 "flight_period": "Jun 1 – Sep 30",
+                "inat_taxon": 48662,
                 "wildlife_id": 42,
                 "thumbnail_id": 103
             },
@@ -128,6 +191,7 @@ def expected_wildlife():
         ]
     }
 
+    "inat_taxon" is the row's iNaturalist taxon ID (null if it has none).
     A null wildlife_id/thumbnail_id/scientific_name means the species is in
     the flight-times chart but doesn't yet have a matching entry (and photos)
     in this dataset's Wildlife table.
@@ -153,9 +217,7 @@ def expected_wildlife():
     if zone not in VALID_ZONE_PARAMS:
         return jsonify({"error": f"Invalid zone '{zone}', expected one of {VALID_ZONE_PARAMS}"}), 400
 
-    csv_path = os.path.join(
-        db_helpers.DATA_FOLDER, _normalize_dataset_name(dataset), "flight_times.csv"
-    )
+    csv_path = _flight_times_path(dataset)
     if not os.path.isfile(csv_path):
         return jsonify({"error": f"No flight_times.csv for dataset '{dataset}'"}), 404
 
@@ -186,6 +248,7 @@ def expected_wildlife():
                             "zones": list(zone_periods),
                             "zone_periods": zone_periods,
                             "flight_period": periods.pop() if len(periods) == 1 else None,
+                            "inat_taxon": _taxon_id(row),
                         }
                     )
             else:
@@ -198,15 +261,9 @@ def expected_wildlife():
                             "zones": [],
                             "zone_periods": {},
                             "flight_period": _format_period((start, end)),
+                            "inat_taxon": _taxon_id(row),
                         }
                     )
-
-    # Match against the Wildlife table by name, normalizing apostrophe, hyphen
-    # and space style (the CSV uses plain ASCII; scraped DB names sometimes use
-    # curly quotes, non-breaking hyphens or non-breaking spaces) and case,
-    # since otherwise e.g. "Weidemeyer's Admiral" wouldn't match "Weidemeyer’s Admiral".
-    def normalize_name(name):
-        return name.lower().replace("’", "'").replace("‑", "-").replace("\xa0", " ")
 
     wildlife_by_name = {
         normalize_name(w["name"]): w
@@ -223,6 +280,7 @@ def expected_wildlife():
                 "zones": match["zones"],
                 "zone_periods": match["zone_periods"],
                 "flight_period": match["flight_period"],
+                "inat_taxon": match["inat_taxon"],
                 "scientific_name": wildlife["scientific_name"] if wildlife else None,
                 "wildlife_id": wildlife["id"] if wildlife else None,
                 "thumbnail_id": wildlife["thumbnail_id"] if wildlife else None,
