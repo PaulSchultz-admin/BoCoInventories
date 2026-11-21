@@ -4,6 +4,7 @@ import "./index.css";
 import { App } from "./App";
 import { AdminProvider } from "./services/adminContext";
 import { registerServiceWorker } from "./services/offline";
+import "./services/installPrompt"; // start listening for the install event early
 // import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById("root"));

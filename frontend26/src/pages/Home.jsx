@@ -15,6 +15,7 @@ import { AdminContext } from "../services/adminContext";
 import apiService from "../services/apiService";
 import { sites } from "../data/sites";
 import { ExpectedOnDate, EXPECTED_DATASETS } from "../components/ExpectedOnDate";
+import { InstallApp } from "../components/InstallApp";
 
 export const Home = () => {
   const { admin } = useContext(AdminContext);
@@ -62,6 +63,8 @@ export const Home = () => {
           alt="QR code linking to the Boulder County Inventories home page"
           className="absolute z-10 w-24 h-24 rounded-lg shadow-lg right-4 top-16 md:w-32 md:h-32 md:right-6 md:top-18"
         />
+        {/* Same width as the QR code, just below it. */}
+        <InstallApp className="absolute z-20 w-24 right-4 top-42 md:w-32 md:right-6 md:top-52" />
         <div className="relative z-10 flex h-full items-center px-[8%]">
           <h1 className="font-[Cormorant_Garamond] italic text-5xl lg:text-7xl font-semibold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
             Boulder County Inventories
