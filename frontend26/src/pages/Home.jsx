@@ -16,6 +16,7 @@ import apiService from "../services/apiService";
 import { sites } from "../data/sites";
 import { ExpectedOnDate, EXPECTED_DATASETS } from "../components/ExpectedOnDate";
 import { InstallApp } from "../components/InstallApp";
+import { UnderConstruction } from "../components/UnderConstruction";
 
 export const Home = () => {
   const { admin } = useContext(AdminContext);
@@ -65,6 +66,8 @@ export const Home = () => {
         />
         {/* Same width as the QR code, just below it. */}
         <InstallApp className="absolute z-20 w-24 right-4 top-42 md:w-32 md:right-6 md:top-52" />
+        {/* Temporary: remove this line (and UnderConstruction.jsx) when done. */}
+        <UnderConstruction className="absolute z-20 bottom-8 left-[8%]" />
         <div className="relative z-10 flex h-full items-center px-[8%]">
           <h1 className="font-[Cormorant_Garamond] italic text-5xl lg:text-7xl font-semibold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
             Boulder County Inventories
@@ -76,7 +79,7 @@ export const Home = () => {
       <section className="px-5 py-14">
         <div className="grid gap-6 mx-auto max-w-375 sm:grid-cols-2 lg:grid-cols-3">
           {disabled &&
-            sites.map(site => {
+            sites.filter(site => !site.unlisted).map(site => {
               const isDisabled = disabled.includes(site.id);
               const tileContent = (
                 <>

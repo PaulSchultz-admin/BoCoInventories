@@ -100,6 +100,9 @@ Content coming soon.
 
 Content coming soon.
 """,
+    # Progress notes behind the home page's temporary "Under Construction" sign
+    # (lives in the "home" dataset). Starts empty; an admin writes it in place.
+    "construction": "",
 }
 
 VALID_PAGES = set(DEFAULT_PAGES)

@@ -8,6 +8,10 @@
 import { useState } from "react";
 import { PhotoSubmitModal } from "./PhotoSubmitModal";
 
+// Temporarily closed: the checkbox and its text are grayed out and can't be
+// checked, so the photo upload popup can't be opened. Set to true to reopen.
+const SUBMISSIONS_OPEN = false;
+
 export function ContributorAgreement({ html, markdown }) {
   const [agreed, setAgreed] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -25,12 +29,18 @@ export function ContributorAgreement({ html, markdown }) {
       <div className="max-w-none prose prose-headings:font-serif" dangerouslySetInnerHTML={{ __html: html }} />
 
       <div className="flex flex-wrap items-center justify-between gap-4 pt-5 mt-6 border-t border-sand-200">
-        <label className="flex items-center gap-3 font-sans text-lg font-semibold cursor-pointer select-none text-sand-700">
+        <label
+          title={SUBMISSIONS_OPEN ? undefined : "Photo submissions are temporarily closed"}
+          className={`flex items-center gap-3 font-sans text-lg font-semibold select-none ${
+            SUBMISSIONS_OPEN ? "cursor-pointer text-sand-700" : "cursor-not-allowed text-sand-300"
+          }`}
+        >
           <input
             type="checkbox"
             checked={agreed}
             onChange={handleAgreeChange}
-            className="w-5 h-5 accent-pink-700 cursor-pointer"
+            disabled={!SUBMISSIONS_OPEN}
+            className={`w-5 h-5 accent-pink-700 ${SUBMISSIONS_OPEN ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
           />
           I understand and agree
         </label>

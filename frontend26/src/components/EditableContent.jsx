@@ -5,7 +5,9 @@
  * specialSection optionally hands one section of the page to a custom
  * renderer instead of plain markdown: { heading, render }. The section runs
  * from the first heading whose text contains `heading` up to the next heading
- * of the same or a higher level; render(html, markdown) gets that section.
+ * of a higher level, so it takes in any same-level headings that follow it
+ * (e.g. a "### Representations and Warranties" after the agreement's own
+ * "###" heading, up to the next "##"); render(html, markdown) gets that section.
  * It's matched by heading text, so admins can still edit the section's words
  * as long as they keep its heading. If no heading matches, the page renders
  * as plain markdown.
@@ -26,7 +28,7 @@ function splitSection(markdown, headingText) {
   const start = lines.findIndex(line => /^#{1,6}\s/.test(line) && line.toLowerCase().includes(needle));
   if (start === -1) return null;
   const level = lines[start].match(/^#+/)[0].length;
-  let end = lines.findIndex((line, i) => i > start && /^#{1,6}\s/.test(line) && line.match(/^#+/)[0].length <= level);
+  let end = lines.findIndex((line, i) => i > start && /^#{1,6}\s/.test(line) && line.match(/^#+/)[0].length < level);
   if (end === -1) end = lines.length;
   const join = part => part.join("\n");
   return [join(lines.slice(0, start)), join(lines.slice(start, end)), join(lines.slice(end))];
