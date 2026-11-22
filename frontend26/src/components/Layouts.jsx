@@ -17,6 +17,7 @@ import { COPYRIGHT_PAGES } from "../data/copyrightPages";
 import { ChevronDown } from "lucide-react";
 import { RaptorMoreDB } from "../pages/WildlifeDBs/RaptorMoreDB";
 import { WildflowerMoreDB } from "../pages/WildlifeDBs/WildflowerMoreDB";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 const DEFAULT_TITLE = "BCNA Wildlife Database";
 
@@ -89,6 +90,7 @@ export const HomeLayout = () => {
             <NavLink to="/about" className={linkClass}>About</NavLink>
             <CopyrightsMenu linkClass={linkClass} />
             <NavLink to="/contact" className={linkClass}>Contact</NavLink>
+            <LanguageSwitch className={linkClass} />
           </div>
         </nav>
         <Outlet />

@@ -25,7 +25,7 @@ const CardResult = ({ data }) => {
 
         {/* Subcategory */}
         <p className="text-sm">
-          <em>{data.scientific_name}</em>
+          <em translate="no">{data.scientific_name}</em>
         </p>
       </div>
     </div>

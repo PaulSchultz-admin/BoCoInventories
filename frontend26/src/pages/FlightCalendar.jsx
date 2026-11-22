@@ -56,7 +56,7 @@ export function SpeciesCard({
       <div className="p-3">
         <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
         {scientificName && (
-          <p className="mt-0.5 font-serif text-xs italic truncate text-sand-400">{scientificName}</p>
+          <p translate="no" className="mt-0.5 font-serif text-xs italic truncate text-sand-400">{scientificName}</p>
         )}
         {periodPerZone &&
           zones.map(zone => (

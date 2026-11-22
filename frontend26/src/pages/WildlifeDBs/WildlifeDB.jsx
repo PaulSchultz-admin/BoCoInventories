@@ -60,7 +60,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
       </div>
       <div className="p-3">
         <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
-        <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
+        <p translate="no" className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
     </NavLink>
   );
@@ -337,7 +337,7 @@ function EditDisplayListModal({
                 ))}
                 <span className="min-w-0 truncate">
                   <span className="font-serif text-sand-600">{w.name}</span>{" "}
-                  <span className="font-serif italic text-sand-400 text-sm">
+                  <span translate={listsBySize ? undefined : "no"} className="font-serif italic text-sand-400 text-sm">
                     {listsBySize ? wingspanText(w) : w.scientific_name}
                   </span>
                 </span>

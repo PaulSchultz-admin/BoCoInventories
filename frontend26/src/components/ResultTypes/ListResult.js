@@ -25,7 +25,7 @@ const ListResult = ({ data }) => {
 
         {/* Subcategory under the name */}
         <p className="text-sm">
-          <em>{data.scientific_name}</em>
+          <em translate="no">{data.scientific_name}</em>
         </p>
       </div>
     </div>

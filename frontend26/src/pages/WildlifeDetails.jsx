@@ -281,7 +281,7 @@ function FullscreenModal({ images, startIndex, wildlife, baseUrl, onClose, backL
 
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
         <p className="font-bold">{wildlife.name}</p>
-        {wildlife.scientific_name !== wildlife.name && <p className="italic">{wildlife.scientific_name}</p>}
+        {wildlife.scientific_name !== wildlife.name && <p className="italic" translate="no">{wildlife.scientific_name}</p>}
         {matchedImage?.comment && <p className="italic">{matchedImage.comment}</p>}
         {matchedImage?.location_taken && <p>{matchedImage.location_taken}</p>}
         {matchedImage?.date_taken && <p>{matchedImage.date_taken}</p>}
@@ -337,7 +337,7 @@ function generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc) {
 <div class="card">
   <div class="header">
     <span class="name">${wildlife.name || ""}</span>
-    <span class="sci">${wildlife.scientific_name || ""}</span>
+    <span class="sci" translate="no">${wildlife.scientific_name || ""}</span>
   </div>
   <img class="photo" src="${imageSrc}" alt="${wildlife.name}" />
   <div class="fields">${fields}</div>
@@ -387,7 +387,7 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
           {/* Header row */}
           <div className="flex items-baseline justify-between mb-3">
             <span className="text-lg font-bold">{wildlife.name}</span>
-            <span className="text-base italic">{wildlife.scientific_name}</span>
+            <span className="text-base italic" translate="no">{wildlife.scientific_name}</span>
           </div>
 
           {/* Photo */}
@@ -840,7 +840,7 @@ export default function WildlifeDetails() {
               <h1 className="text-4xl md:text-5xl font-serif font-bold text-center">{wildlife.name}</h1>
               {/* The backend requires a unique second name, so a park repeats its own. */}
               {wildlife.scientific_name !== wildlife.name && (
-                <p className="text-xl md:text-2xl font-serif italic mt-2 opacity-90">{wildlife.scientific_name}</p>
+                <p translate="no" className="text-xl md:text-2xl font-serif italic mt-2 opacity-90">{wildlife.scientific_name}</p>
               )}
             </>
           )}
